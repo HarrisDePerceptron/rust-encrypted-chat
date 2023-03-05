@@ -1,9 +1,11 @@
+use std::time::Instant;
+
 use actix::{Addr};
 use actix_web::{Responder, HttpResponse, web, get, HttpRequest, Error };
 use actix_web_actors::ws;
 
 
-use crate::websocket_server::WebSocketServer;
+use crate::server::WebSocketServer;
 use crate::websocket_session::WebSocketSession;
 
 
@@ -14,10 +16,12 @@ pub async fn websocket_index(
     state: web::Data<Addr<WebSocketServer>>,
 ) -> Result<HttpResponse, Error> {
     let resp = ws::start(
-        WebSocketSession {
-            server: state.get_ref().clone(),
-            id: 0,
-        },
+        // WebSocketSession {
+        //     server: state.get_ref().clone(),
+        //     id: 0,
+        //     hb: Instant::now()
+        // },
+        WebSocketSession::new(state.get_ref().clone()),
         &req,
         stream,
     );
