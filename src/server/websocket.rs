@@ -1,7 +1,7 @@
 
 use std::collections::HashMap;
 
-use actix::{Actor, Context, Handler, Recipient};
+use actix::{Actor, Context, Handler, Recipient, Addr};
 
 use crate::messages::websocket_session_messages::{TextMessage};
 use crate::server::messages::{Connect,TextMessageAll,CountAll,Disconnect, Join};
@@ -53,17 +53,17 @@ impl WebSocketServer {
         let ch = self.channels.get_mut(name);
 
         if let Some(ch) = ch {
-           ch.add_user(user_session);
+           ch.add_session(user_session);
         }else{
             let mut ch_default = Channel::new(&self.ch_id.to_string(), name);
-            ch_default.add_user(user_session);
+            ch_default.add_session(user_session);
             self.channels.insert(name.to_string(), ch_default);
         }
 
     }
 
 
-    pub fn get_channel(&mut self ,channel: &str) -> Option<&Channel> {
+    pub fn get_channel(&self ,channel: &str) -> Option<&Channel> {
         return self.channels.get(channel);
     }
 
@@ -74,6 +74,28 @@ impl WebSocketServer {
 
     pub fn get_session(&self,session_id: &str) -> Option<&UserSession> {
         return self.sessions.get(session_id);
+    }
+
+    pub fn remove_session(&mut self,sess: &UserSession)-> Option<UserSession>{
+        self.sessions.remove(&sess.session_id)
+    }
+
+    pub fn remove_session_channels(&mut self, session:  &UserSession){
+        for (name, ch) in self.channels.iter_mut() {
+
+            let res = ch.remove_session(session);
+            if let Some(_) = res {
+                println!("Removed session from channel: {}", name);
+            }
+        }
+    }
+
+    pub fn send_to_channel(&self, channel: &str, message: &str){
+        let ch = self.get_channel(channel);
+        if let Some(ch) = ch {
+            ch.send(message);
+        }
+        
     }
 
 }
@@ -121,8 +143,12 @@ impl Handler<Disconnect> for WebSocketServer {
     type Result=();
 
     fn handle(&mut self, msg: Disconnect, ctx: &mut Self::Context) -> Self::Result {
-        println!("Chatserver: disconnecting with actor id: {}", msg.id);
-        
+
+
+        println!("Chatserver: disconnecting with actor id: {}", msg.session.session_id);
+        self.remove_session(&msg.session);
+        self.remove_session_channels(&msg.session);
+
     }
 }
 
@@ -149,14 +175,6 @@ impl Handler<SendChannel> for WebSocketServer {
 
     fn handle(&mut self, msg: SendChannel, ctx: &mut Self::Context) -> Self::Result {
         println!("Sending to channel...");
-
-       let ch = self.get_channel(&msg.channel_name);
-       if let Some(ch) = ch {
-            for sess in &ch.users {
-                sess.session.do_send(TextMessage{message: msg.message.clone()});
-            }
-       }else{
-        println!("Channel {} not found", msg.channel_name);
-       }
+        self.send_to_channel(&msg.channel_name, &msg.message);
     }
 }

@@ -26,18 +26,25 @@ pub struct WebSocketSession {
 
 impl  WebSocketSession {
     fn hb(&self, ctx: &mut ws::WebsocketContext<Self>) {
-        ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
+        let addr = ctx.address();
+        let sess = self.get_user_session_owned(addr);
+
+        ctx.run_interval(HEARTBEAT_INTERVAL, move|act, ctx| {
             // check client heartbeats
             if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
                 // heartbeat timed out
                 println!("Websocket Client heartbeat failed, disconnecting!");
+             
+                // let sess = self.get_user_session(addr);
+              
 
+                if let Some(sess)= &sess {
+                    act.server.do_send(Disconnect { session: sess.to_owned() });
+                }
                 // notify chat server
-                act.server.do_send(Disconnect { id: act.id });
 
                 // stop actor
                 ctx.stop();
-
                 // don't try to send a ping
                 return;
             }
@@ -59,6 +66,16 @@ impl  WebSocketSession {
 
             return None;
     }
+
+    pub fn get_user_session_owned(&self, addr: Addr<WebSocketSession>)-> Option<UserSession>{
+        for (sid, sess) in &self.sessions {
+                if addr == sess.session {
+                    return Some(sess.to_owned());
+                }
+        }
+
+        return None;
+}
 
 }
 
@@ -94,7 +111,11 @@ impl Actor for WebSocketSession {
     }
 
     fn stopping(&mut self, ctx: &mut Self::Context) -> actix::Running {
-        self.server.do_send(Disconnect{id:self.id});
+        let addr = ctx.address();
+        let session = self.get_user_session(addr);
+        if let Some(session) = session {
+            self.server.do_send(Disconnect{session: session.to_owned()});
+        }
 
         actix::Running::Stop
     }

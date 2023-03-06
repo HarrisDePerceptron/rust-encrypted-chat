@@ -29,7 +29,7 @@ impl Message for CountAll {
 
 
 pub struct Disconnect {
-    pub id: usize
+    pub session: UserSession
 }
 impl Message for Disconnect {
     type Result = ();

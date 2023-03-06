@@ -1,10 +1,12 @@
-use crate::server::UserSession;
+use actix::Recipient;
+
+use crate::{server::UserSession, messages::websocket_session_messages::TextMessage};
 
 
 pub struct Channel {
     pub id: String,
     pub name: String,
-    pub users: Vec<UserSession>,
+    pub sessions: Vec<UserSession>,
 }
 
 
@@ -13,13 +15,38 @@ impl Channel {
         Self { 
             id: id.to_string() , 
             name: name.to_string(), 
-            users: vec![] 
+            sessions: vec![] 
         }
     }
 
 
-    pub fn add_user(&mut self, session:  &UserSession) -> (){
-        self.users.push(session.clone());
+    pub fn add_session(&mut self, session:  &UserSession) -> (){
+        let result = self.sessions.iter().position(|x| x.session_id==session.session_id);
+
+        if let Some(_) = result {
+            println!("Session'{}' already added to channel {}", session.session_id, self.name);
+        }else{
+
+            self.sessions.push(session.clone());
+        }
+    }
+
+    pub fn remove_session(&mut self, session: &UserSession) -> Option<UserSession>{
+
+        let mut sess: Option<UserSession> = None;
+        let idx= self.sessions.iter().position(|x| x.session_id==session.session_id);
+        if let Some(idx) = idx {
+            sess = Some(self.sessions.remove(idx));
+
+        }
+
+        return sess;
+    }
+
+    pub fn send(&self,message: &str) {
+        for sess in &self.sessions {
+            sess.session.do_send(TextMessage{message: message.to_string()});
+        }
     }
 }
 
