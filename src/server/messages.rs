@@ -5,6 +5,40 @@ use crate::server::UserSession;
 
 
 
+pub struct ServerMessage<T> {
+    pub message: T,
+    pub session: UserSession
+}
+
+impl<T> ServerMessage<T>
+where
+    T: Message
+{
+    fn session(&self)-> &UserSession{
+        &self.session
+    }
+}
+
+impl<T> std::ops::Deref for ServerMessage<T> 
+where
+    T: Message
+{
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.message
+    }
+}
+
+impl<T> Message for ServerMessage<T> 
+where 
+    T: Message
+{
+    type Result = T::Result;
+}
+
+
+
 pub struct Connect (pub UserSession);
 
 impl Message for Connect {

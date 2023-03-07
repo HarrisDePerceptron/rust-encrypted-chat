@@ -1,13 +1,14 @@
 
 use std::collections::HashMap;
+use std::ops::Add;
 
-use actix::{Actor, Context, Handler, Recipient, Addr};
+use actix::{Actor, Context, Handler, Recipient, Addr, Message};
+use actix_web::http::header::RETRY_AFTER;
 
 use crate::messages::websocket_session_messages::{TextMessage};
-use crate::server::messages::{Connect,TextMessageAll,CountAll,Disconnect, Join};
+use crate::server::messages::{Connect,TextMessageAll,CountAll,Disconnect, Join, SendChannel, ServerMessage};
 use crate::server::{UserSession, Channel};
-
-use super::messages::SendChannel;
+use crate::websocket_session::WebSocketSession;
 
 
 pub struct WebSocketServer {
@@ -76,6 +77,19 @@ impl WebSocketServer {
         return self.sessions.get(session_id);
     }
 
+
+    pub fn get_session_address(&self, session: &UserSession) -> Option<UserSession> {
+        
+      for (_, sess) in &self.sessions {
+            if sess.session == session.session {
+                return Some(sess.to_owned());
+            }
+      }
+
+      None        
+
+    }
+
     pub fn remove_session(&mut self,sess: &UserSession)-> Option<UserSession>{
         self.sessions.remove(&sess.session_id)
     }
@@ -96,6 +110,15 @@ impl WebSocketServer {
             ch.send(message);
         }
         
+    }
+
+
+    pub fn send_to_session(&self, session: &UserSession, message: &str){
+        let sess = self.get_session_address(session);
+        if let Some(sess) = sess {
+            sess.session.do_send(TextMessage { message: message.to_string()});
+        }
+
     }
 
 }
@@ -130,11 +153,20 @@ impl Handler<TextMessageAll> for WebSocketServer {
 }
 
 
-impl Handler<CountAll> for WebSocketServer {
-    type Result = ();
+// impl Handler<ServerMessage<CountAll>> for WebSocketServer {
+//     type Result = ServerMessage<CountAll>::
 
-    fn handle(&mut self, msg: CountAll, ctx: &mut Self::Context) -> Self::Result {
-        self.notify_all(self.index.to_string().as_str());
+//     fn handle(&mut self, msg: ServerMessage<CountAll>>, ctx: &mut Self::Context) -> Self::Result {
+//         // self.notify_all(self.index.to_string().as_str());
+        
+//     }
+// }
+
+impl Handler<ServerMessage<CountAll>> for WebSocketServer {
+    type Result = <ServerMessage<CountAll> as Message>::Result;
+
+    fn handle(&mut self, msg: ServerMessage<CountAll>, ctx: &mut Self::Context) -> Self::Result {
+        self.send_to_session(&msg.session, self.sessions.keys().len().to_string().as_str());
     }
 }
 
