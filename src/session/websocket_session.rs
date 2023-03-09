@@ -4,7 +4,7 @@ use actix::{
 };
 use actix_web_actors::ws;
 
-use crate::messages::websocket_session_messages::TextMessage;
+use crate::session::TextMessage;
 use crate::server::messages::{Connect, CountAll, Disconnect, Join, ServerMessage};
 use crate::server::{usersession, UserSession, WebSocketServer};
 use std::collections::{HashMap, HashSet};

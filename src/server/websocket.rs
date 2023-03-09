@@ -5,10 +5,10 @@ use std::ops::Add;
 use actix::{Actor, Context, Handler, Recipient, Addr, Message};
 use actix_web::http::header::RETRY_AFTER;
 
-use crate::messages::websocket_session_messages::{TextMessage};
+use crate::session::{TextMessage};
 use crate::server::messages::{Connect,TextMessageAll,CountAll,Disconnect, Join, SendChannel, ServerMessage};
 use crate::server::{UserSession, Channel};
-use crate::websocket_session::WebSocketSession;
+use crate::session::WebSocketSession;
 
 
 pub struct WebSocketServer {

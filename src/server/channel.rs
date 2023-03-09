@@ -1,6 +1,6 @@
-use actix::Recipient;
 
-use crate::{server::UserSession, messages::websocket_session_messages::TextMessage};
+
+use crate::{server::UserSession, session::TextMessage};
 
 
 pub struct Channel {

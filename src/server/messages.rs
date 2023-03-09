@@ -1,6 +1,6 @@
 use actix::{Message, Addr};
 
-use crate::websocket_session::{WebSocketSession};
+use crate::session::{WebSocketSession};
 use crate::server::UserSession;
 
 

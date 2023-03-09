@@ -1,5 +1,5 @@
 
-use crate::websocket_session::WebSocketSession;
+use crate::session::WebSocketSession;
 use actix::{Addr};
 
 

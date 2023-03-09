@@ -6,7 +6,7 @@ use actix_web_actors::ws;
 
 
 use crate::server::WebSocketServer;
-use crate::websocket_session::WebSocketSession;
+use crate::session::WebSocketSession;
 
 
 #[get("/ws/")]
