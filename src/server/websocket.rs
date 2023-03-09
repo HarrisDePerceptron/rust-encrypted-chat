@@ -125,10 +125,10 @@ impl WebSocketServer {
 
 
 
-impl Handler<Connect> for WebSocketServer {
+impl Handler<ServerMessage<Connect>> for WebSocketServer {
     type Result = usize;
 
-    fn handle(&mut self, msg: Connect, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerMessage<Connect>, ctx: &mut Self::Context) -> Self::Result {
         println!("Connecting new websocket session...");
         
         self.register_session(&msg.0);
@@ -147,20 +147,12 @@ impl Handler<Connect> for WebSocketServer {
 impl Handler<TextMessageAll> for WebSocketServer {
     type Result = ();
 
+
     fn handle(&mut self, msg: TextMessageAll, ctx: &mut Self::Context) -> Self::Result {
         self.notify_all(&msg.message);
     }
 }
 
-
-// impl Handler<ServerMessage<CountAll>> for WebSocketServer {
-//     type Result = ServerMessage<CountAll>::
-
-//     fn handle(&mut self, msg: ServerMessage<CountAll>>, ctx: &mut Self::Context) -> Self::Result {
-//         // self.notify_all(self.index.to_string().as_str());
-        
-//     }
-// }
 
 impl Handler<ServerMessage<CountAll>> for WebSocketServer {
     type Result = <ServerMessage<CountAll> as Message>::Result;
@@ -171,10 +163,10 @@ impl Handler<ServerMessage<CountAll>> for WebSocketServer {
 }
 
 
-impl Handler<Disconnect> for WebSocketServer {
-    type Result=();
+impl Handler<ServerMessage<Disconnect>> for WebSocketServer {
+    type Result=<ServerMessage<Disconnect> as Message>::Result;
 
-    fn handle(&mut self, msg: Disconnect, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerMessage<Disconnect>, ctx: &mut Self::Context) -> Self::Result {
 
 
         println!("Chatserver: disconnecting with actor id: {}", msg.session.session_id);
@@ -185,13 +177,13 @@ impl Handler<Disconnect> for WebSocketServer {
 }
 
 
-impl Handler<Join> for WebSocketServer {
-    type Result=();
+impl Handler<ServerMessage<Join>> for WebSocketServer {
+    type Result=<ServerMessage<Join> as Message>::Result; 
 
-    fn handle(&mut self, msg: Join, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerMessage<Join>, ctx: &mut Self::Context) -> Self::Result {
         println!("Joining channel...");
 
-        let sess = self.get_session(&msg.session_id);
+        let sess = self.get_session(&msg.session.session_id);
 
         if let Some(sess) = sess {
             self.join_channel(&msg.name, &sess.to_owned());

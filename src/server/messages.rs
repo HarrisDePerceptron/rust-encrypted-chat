@@ -63,7 +63,6 @@ impl Message for CountAll {
 
 
 pub struct Disconnect {
-    pub session: UserSession
 }
 impl Message for Disconnect {
     type Result = ();
@@ -72,7 +71,6 @@ impl Message for Disconnect {
 
 
 pub struct Join {
-    pub session_id: String,
     pub name: String
 }
 impl Message for Join {

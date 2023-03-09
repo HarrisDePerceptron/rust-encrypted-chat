@@ -6,7 +6,7 @@ use actix_web_actors::ws;
 
 use crate::messages::websocket_session_messages::TextMessage;
 use crate::server::messages::{Connect, CountAll, Disconnect, Join, ServerMessage};
-use crate::server::{UserSession, WebSocketServer};
+use crate::server::{usersession, UserSession, WebSocketServer};
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
@@ -38,7 +38,9 @@ impl WebSocketSession {
                 // let sess = self.get_user_session(addr);
 
                 if let Some(sess) = &sess {
-                    act.server.do_send(Disconnect {
+                    act.server.do_send(ServerMessage {
+                        message: Disconnect {
+                        },
                         session: sess.to_owned(),
                     });
                 }
@@ -100,7 +102,10 @@ impl Actor for WebSocketSession {
         self.sessions.insert(session_id, user_session.clone());
 
         self.server
-            .send(Connect(user_session))
+            .send(ServerMessage {
+                message: Connect(user_session.to_owned()),
+                session: user_session.to_owned(),
+            })
             .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
@@ -117,7 +122,9 @@ impl Actor for WebSocketSession {
         let addr = ctx.address();
         let session = self.get_user_session(addr);
         if let Some(session) = session {
-            self.server.do_send(Disconnect {
+            self.server.do_send(ServerMessage {
+                message: Disconnect {
+                },
                 session: session.to_owned(),
             });
         }
@@ -154,28 +161,29 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
                 let msg = text.to_string();
 
                 println!("got msg: {}", msg);
-                
 
                 match msg.as_str() {
-                "count" => {
-                    self.server.do_send(ServerMessage {
-                        message: CountAll {},
-                        session: user_session.to_owned(),
-                    });
-                }
-                "join" => {
-                    let session_id = user_session.session_id.to_owned();
-                    println!("joining 'hey' with session id: {}", session_id);
-                    self.server.do_send(Join {
-                        name: "hey".to_string(),
-                        session_id: session_id,
-                    });
-                }
-                _ => {
-                    ctx.text(text);
+                    "count" => {
+                        self.server.do_send(ServerMessage {
+                            message: CountAll {},
+                            session: user_session.to_owned(),
+                        });
+                    }
+                    "join" => {
+                        let session_id = user_session.session_id.to_owned();
+                        println!("joining 'hey' with session id: {}", session_id);
+                        self.server.do_send(ServerMessage {
+                            message: Join {
+                                name: "hey".to_string()
+                            },
+                            session: user_session.to_owned(),
+                        });
+                    }
+                    _ => {
+                        ctx.text(text);
+                    }
                 }
             }
-            },
             ws::Message::Binary(bin) => ctx.binary(bin),
             ws::Message::Close(reason) => {
                 if let Some(reason) = reason {
