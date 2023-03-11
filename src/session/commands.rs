@@ -1,5 +1,8 @@
 // use crate::server::messages::{Join,TextMessageAll,CountAll,SendChannel};
+use serde::{Serialize, Deserialize};
 
+
+#[derive(Serialize, Deserialize, Debug)]
 pub enum Command {
     JOIN(JoinRequest),
     LEAVE(LeaveRequest),
@@ -10,24 +13,29 @@ pub enum Command {
 
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ToChannelRequest {
     pub channel_name: String,
     pub message: String
 }
 
-
+#[derive(Serialize, Deserialize, Debug)]
 pub struct JoinRequest {
     pub channel_name: String
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct LeaveRequest {
     pub channel_name: String
 }
 
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct BroadcastRequest {
     pub message: String
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct CountRequest {
 
 }

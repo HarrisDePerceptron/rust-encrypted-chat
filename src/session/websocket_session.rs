@@ -7,6 +7,7 @@ use actix_web_actors::ws;
 use crate::session::TextMessage;
 use crate::server::messages::{Connect, CountAll, Disconnect, Join, ServerMessage};
 use crate::server::{usersession, UserSession, WebSocketServer};
+use crate::session::commands::Command;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
@@ -159,6 +160,15 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
 
             ws::Message::Text(text) => {
                 let msg = text.to_string();
+
+
+                let command: Result<Command, _> = serde_json::from_str(&msg);
+
+                if let Err(e) = command {
+                    let error_msg = e.to_string();
+                    ctx.text(error_msg);
+                    return;
+                }
 
                 println!("got msg: {}", msg);
 

@@ -7,6 +7,8 @@ use crate::server::WebSocketServer;
 
 
 
+
+
 #[get("/hi")]
 pub async fn say_hi(state: web::Data<Addr<WebSocketServer>>) -> impl Responder {
     if let Err(e) = state
