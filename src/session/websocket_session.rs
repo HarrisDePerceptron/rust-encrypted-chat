@@ -1,13 +1,12 @@
 use actix::{
     fut, Actor, ActorContext, ActorFutureExt, Addr, AsyncContext, ContextFutureSpawner, Handler,
-    StreamHandler, WrapFuture,
+    StreamHandler, WrapFuture, Message,
 };
 use actix_web_actors::ws;
 
 use crate::session::TextMessage;
 use crate::server::messages::{Connect, CountAll, Disconnect, Join, ServerMessage};
 use crate::server::{usersession, UserSession, WebSocketServer};
-use crate::session::commands::Command;
 use std::collections::{HashMap, HashSet};
 use std::time::{Duration, Instant};
 
@@ -18,6 +17,9 @@ const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 /// How long before lack of client response causes a timeout
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
+
+pub type SessionContext<T> = ws::WebsocketContext<T>; 
+
 pub struct WebSocketSession {
     pub id: usize,
     pub server: Addr<WebSocketServer>,
@@ -26,6 +28,11 @@ pub struct WebSocketSession {
 }
 
 impl WebSocketSession {
+
+    pub fn get_server_address (&self) -> Addr<WebSocketServer>{
+        return self.server.to_owned();
+    }
+
     fn hb(&self, ctx: &mut ws::WebsocketContext<Self>) {
         let addr = ctx.address();
         let sess = self.get_user_session_owned(addr);
@@ -88,7 +95,7 @@ impl WebSocketSession {
 }
 
 impl Actor for WebSocketSession {
-    type Context = ws::WebsocketContext<Self>;
+    type Context = SessionContext<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.hb(ctx);
@@ -131,94 +138,5 @@ impl Actor for WebSocketSession {
         }
 
         actix::Running::Stop
-    }
-}
-
-
-
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession {
-    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        let msg = match msg {
-            Ok(msg) => msg,
-            Err(e) => {
-                println!("Got message error: {}", e.to_string());
-                ctx.stop();
-                return;
-            }
-        };
-
-        let addr = ctx.address();
-        let user_session = self.get_user_session(addr).expect("user session not found");
-
-        match msg {
-            ws::Message::Ping(msg) => {
-                self.hb = Instant::now();
-                println!("ping");
-                ctx.pong(&msg)
-            }
-            ws::Message::Pong(msg) => {
-                self.hb = Instant::now();
-            }
-
-            ws::Message::Text(text) => {
-                let msg = text.to_string();
-
-
-                let command: Result<Command, _> = serde_json::from_str(&msg);
-
-                if let Err(e) = command {
-                    let error_msg = e.to_string();
-                    ctx.text(error_msg);
-                    return;
-                }
-
-                println!("got msg: {}", msg);
-
-                match msg.as_str() {
-                    "count" => {
-                        self.server.do_send(ServerMessage {
-                            message: CountAll {},
-                            session: user_session.to_owned(),
-                        });
-                    }
-                    "join" => {
-                        let session_id = user_session.session_id.to_owned();
-                        println!("joining 'hey' with session id: {}", session_id);
-                        self.server.do_send(ServerMessage {
-                            message: Join {
-                                name: "hey".to_string()
-                            },
-                            session: user_session.to_owned(),
-                        });
-                    }
-                    _ => {
-                        ctx.text(text);
-                    }
-                }
-            }
-            ws::Message::Binary(bin) => ctx.binary(bin),
-            ws::Message::Close(reason) => {
-                if let Some(reason) = reason {
-                    println!(
-                        "closing connection...\nReason: {}",
-                        reason.description.unwrap()
-                    );
-                }
-
-                println!("closing connection...");
-                ctx.stop();
-            }
-            ws::Message::Continuation(_) => ctx.stop(),
-            ws::Message::Nop => (),
-            _ => (),
-        }
-    }
-}
-
-impl Handler<TextMessage> for WebSocketSession {
-    type Result = ();
-
-    fn handle(&mut self, msg: TextMessage, ctx: &mut Self::Context) -> Self::Result {
-        ctx.text(msg.message);
     }
 }

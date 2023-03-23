@@ -8,18 +8,13 @@ use encrypted_chat::app::config_app;
 
 use encrypted_chat::server::WebSocketServer;
 
-use encrypted_chat::session::commands::{Command, JoinRequest};
+use encrypted_chat::session::commands::{CommandRequest};
 
 use serde_json;
 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let c = Command::JOIN(
-        JoinRequest { channel_name: "hello-channel".to_owned() }
-    );
-
-
     // let cs: String = serde_json::to_string(&c).unwrap();
 
     // println!("Serialized: {}", cs);
