@@ -15,17 +15,6 @@ use serde_json;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // let cs: String = serde_json::to_string(&c).unwrap();
-
-    // println!("Serialized: {}", cs);
-
-    // let dc: Command= serde_json::from_str(&cs).unwrap();
-
-
-    // if let Command::JOIN(dd) = dc {
-    //     println!("command join deserialized: {:?}", dd);
-    // }
-
 
     let server =  WebSocketServer::new();
     let server_addr = server.start();

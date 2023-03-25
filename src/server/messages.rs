@@ -81,7 +81,7 @@ impl Message for Join {
 
 pub struct SendChannel {
     pub channel_name: String,
-    pub message: String
+    pub msg: String
 }
 impl Message for SendChannel {
     type Result = ();

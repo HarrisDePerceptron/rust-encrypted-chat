@@ -31,7 +31,7 @@ pub async fn send_channel(path: web::Path<(String,)>,state: web::Data<Addr<WebSo
     if let Err(e) = state
         .send(SendChannel {
             channel_name: channel,
-            message: "hi channel".to_owned(),
+            msg: "hi channel".to_owned(),
         })
         .await
     {

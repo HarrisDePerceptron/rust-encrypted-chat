@@ -4,7 +4,8 @@ use std::fmt::Debug;
 use serde::{Serialize};
 
 
-enum  Response {
+#[derive(Debug, Serialize, Clone)]
+pub enum  ServerResponse {
     COUNT(ResponseBase<CountResponse>),
     JOIN(ResponseBase<JoinResponse>),
     SendChannel(ResponseBase<SendChannelResponse>),
@@ -12,14 +13,13 @@ enum  Response {
     Disconnect(ResponseBase<DisconnectResponse>)
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize,Clone)]
 pub struct ResponseBase<T>
 where
     T: Debug + Serialize
 {
     pub message: String,
     pub data: T,
-    pub error: Option<String>    
 }
 
 
@@ -32,31 +32,31 @@ pub struct ResponseError {
 
 
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct CountResponse{
-    count: i32
+    pub count: usize
 
 }
 
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct JoinResponse{
     
 }
 
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct SendChannelResponse{
     
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct DisconnectResponse{
     
 }
 
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct ConnectResponse{
     
 }

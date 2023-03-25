@@ -10,6 +10,8 @@ use crate::server::messages::{Connect,TextMessageAll,CountAll,Disconnect, Join, 
 use crate::server::{UserSession, Channel};
 use crate::session::WebSocketSession;
 
+use super::server_response::{ServerResponse, CountResponse};
+
 
 pub struct WebSocketServer {
     pub index: usize,
@@ -30,6 +32,7 @@ impl WebSocketServer {
             let res: Recipient<TextMessage> = session.session.clone().recipient();
             res.do_send(TextMessage {
                 message: message.to_owned(),
+                data: None
             });
         }
     }
@@ -104,19 +107,22 @@ impl WebSocketServer {
         }
     }
 
-    pub fn send_to_channel(&self, channel: &str, message: &str){
+    pub fn send_to_channel(&self, channel: &str, message: &str, data: Option<ServerResponse>){
         let ch = self.get_channel(channel);
         if let Some(ch) = ch {
-            ch.send(message);
+            ch.send(message, data);
         }
         
     }
 
 
-    pub fn send_to_session(&self, session: &UserSession, message: &str){
+    pub fn send_to_session(&self, session: &UserSession, message: &str,  data: Option<ServerResponse>){
         let sess = self.get_session_address(session);
         if let Some(sess) = sess {
-            sess.session.do_send(TextMessage { message: message.to_string()});
+            sess.session.do_send(TextMessage { 
+                message: message.to_string(),
+                data: data
+            });
         }
 
     }
@@ -158,7 +164,11 @@ impl Handler<ServerMessage<CountAll>> for WebSocketServer {
     type Result = <ServerMessage<CountAll> as Message>::Result;
 
     fn handle(&mut self, msg: ServerMessage<CountAll>, ctx: &mut Self::Context) -> Self::Result {
-        self.send_to_session(&msg.session, self.sessions.keys().len().to_string().as_str());
+
+        let count: usize= self.sessions.keys().len();
+        let data  = ServerResponse::COUNT(super::server_response::ResponseBase { message: "the count".to_owned(), data: CountResponse { count: count } });
+
+        self.send_to_session(&msg.session, "the count",  Some(data));
     }
 }
 
@@ -199,6 +209,6 @@ impl Handler<SendChannel> for WebSocketServer {
 
     fn handle(&mut self, msg: SendChannel, ctx: &mut Self::Context) -> Self::Result {
         println!("Sending to channel...");
-        self.send_to_channel(&msg.channel_name, &msg.message);
+        self.send_to_channel(&msg.channel_name, &msg.msg,None);
     }
 }

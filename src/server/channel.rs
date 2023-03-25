@@ -2,6 +2,8 @@
 
 use crate::{server::UserSession, session::TextMessage};
 
+use crate::server::server_response::ServerResponse;
+
 
 pub struct Channel {
     pub id: String,
@@ -43,9 +45,12 @@ impl Channel {
         return sess;
     }
 
-    pub fn send(&self,message: &str) {
+    pub fn send(&self,message: &str, data: Option<ServerResponse>) {
         for sess in &self.sessions {
-            sess.session.do_send(TextMessage{message: message.to_string()});
+            sess.session.do_send(TextMessage{
+                message: message.to_string(),
+                data: data.clone()
+            });
         }
     }
 }

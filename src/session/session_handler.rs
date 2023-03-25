@@ -1,6 +1,6 @@
 use crate::server::UserSession;
-use crate::server::messages::{ServerMessage, Join,CountAll};
-use crate::session::WebSocketSession;
+use crate::server::messages::{ServerMessage, Join,CountAll, SendChannel};
+use crate::session::{WebSocketSession, ToChannelRequest};
 // use crate::session::
 
 use actix::{ActorContext, AsyncContext, StreamHandler, Handler, Actor};
@@ -40,6 +40,8 @@ impl CommandHandler for WebSocketSession{
             }
         };
 
+        let session_id = user_session.session_id.to_owned();
+
         match command {
             CommandRequest::COUNT(_) => {
                 server_address.do_send(ServerMessage {
@@ -48,9 +50,9 @@ impl CommandHandler for WebSocketSession{
                 });
                 
                 
-            }
+            },
             CommandRequest::JOIN(c) => {
-                let session_id = user_session.session_id.to_owned();
+              
                 println!("joining 'hey' with session id: {}", session_id);
                 server_address.do_send(ServerMessage {
                     message: Join {
@@ -59,6 +61,15 @@ impl CommandHandler for WebSocketSession{
                     session: user_session.to_owned(),
                 });
 
+                
+            },
+
+            CommandRequest::ToChannel(c) => {
+                println!("sending message from session id: {}", session_id);
+                server_address.do_send(SendChannel {
+                        channel_name: c.channel_name.to_owned(),
+                        msg: c.message.to_owned()
+                });
                 
             }
             _ => {
@@ -86,7 +97,6 @@ impl CommandHandler for WebSocketSession{
 }
 
 impl JSONCommandParser for WebSocketSession {}
-
 
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession {
@@ -146,12 +156,19 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
 }
 
 
-
-
 impl Handler<TextMessage> for WebSocketSession {
     type Result = ();
 
     fn handle(&mut self, msg: TextMessage, ctx: &mut Self::Context) -> Self::Result {
-        ctx.text(msg.message);
+
+        let msg_json = match serde_json::to_string(&msg){
+            Ok(msg) => msg,
+            Err(e)=> {
+                println!("Json serialzation error: {}", e); 
+                return;
+            }
+        };
+
+        ctx.text(msg_json);
     }
 }
