@@ -9,12 +9,15 @@ use encrypted_chat::app::config_app;
 use encrypted_chat::server::WebSocketServer;
 
 use encrypted_chat::session::commands::{CommandRequest};
-
-use serde_json;
+use encrypted_chat::utils;
 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+
+    let uid = utils::generate_unique_id().expect("unable to generate uuid");
+    println!("Your uuid is {}", uid );
+
 
     let server =  WebSocketServer::new();
     let server_addr = server.start();

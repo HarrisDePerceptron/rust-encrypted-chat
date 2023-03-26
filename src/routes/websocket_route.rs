@@ -13,6 +13,9 @@ pub async fn websocket_index(
     stream: web::Payload,
     state: web::Data<Addr<WebSocketServer>>,
 ) -> Result<HttpResponse, Error> {
+
+    let headers = req.headers();
+
     let resp = ws::start(WebSocketSession::new(
         state.get_ref().clone()), &req, stream
     );
