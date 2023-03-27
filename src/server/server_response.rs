@@ -9,8 +9,9 @@ pub enum  ServerResponse {
     COUNT(ResponseBase<CountResponse>),
     JOIN(ResponseBase<JoinResponse>),
     SendChannel(ResponseBase<SendChannelResponse>),
-    Connect(ResponseBase<ConnectResponse>),
-    Disconnect(ResponseBase<DisconnectResponse>)
+    CONNECT(ResponseBase<ConnectResponse>),
+    DISCONNECT(ResponseBase<DisconnectResponse>),
+    ERROR(ResponseBase<ResponseError>)
 }
 
 #[derive(Debug, Serialize,Clone)]
@@ -20,16 +21,23 @@ where
 {
     pub message: String,
     pub data: T,
+    pub message_id: String
+    
 }
 
 
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct ResponseError {
     pub error_message: String,
     pub error_code: i32
 }
 
+#[derive(Debug, Serialize)]
+pub enum ServerResponseType {
+    ERROR(ResponseError),
+    RESPONSE(ServerResponse)
+}
 
 
 #[derive(Debug, Serialize, Clone)]

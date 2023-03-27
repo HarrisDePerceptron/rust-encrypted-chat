@@ -7,7 +7,8 @@ use crate::server::UserSession;
 
 pub struct ServerMessage<T> {
     pub message: T,
-    pub session: UserSession
+    pub session: UserSession,
+    pub message_id: String
 }
 
 impl<T> ServerMessage<T>
@@ -85,4 +86,13 @@ pub struct SendChannel {
 }
 impl Message for SendChannel {
     type Result = ();
+}
+
+
+
+#[derive(Message)]
+#[rtype(result="()")]
+pub struct ErrorMessage {
+    pub error_message: String,
+    pub error_code: i32
 }

@@ -12,6 +12,8 @@ use std::time::{Duration, Instant};
 
 use uuid::Uuid;
 
+use crate::utils;
+
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 
 /// How long before lack of client response causes a timeout
@@ -37,6 +39,7 @@ impl WebSocketSession {
         let addr = ctx.address();
         let sess = self.get_user_session_owned(addr);
 
+
         ctx.run_interval(HEARTBEAT_INTERVAL, move |act, ctx| {
             // check client heartbeats
             if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
@@ -44,12 +47,20 @@ impl WebSocketSession {
                 println!("Websocket Client heartbeat failed, disconnecting!");
 
                 // let sess = self.get_user_session(addr);
+                let message_id  = match utils::generate_unique_id() {
+                    Err(e)=> {
+                        println!("Failed to generate uuid: {}", e.to_string());
+                        return;
+                    }
+                    Ok(v) => v
+                };
 
                 if let Some(sess) = &sess {
                     act.server.do_send(ServerMessage {
                         message: Disconnect {
                         },
                         session: sess.to_owned(),
+                        message_id: message_id
                     });
                 }
                 // notify chat server
@@ -108,11 +119,19 @@ impl Actor for WebSocketSession {
         };
 
         self.sessions.insert(session_id, user_session.clone());
+        let message_id  = match utils::generate_unique_id() {
+            Err(e)=> {
+                println!("Failed to generate uuid: {}", e.to_string());
+                return;
+            }
+            Ok(v) => v
+        };
 
         self.server
             .send(ServerMessage {
                 message: Connect(user_session.to_owned()),
                 session: user_session.to_owned(),
+                message_id: message_id
             })
             .into_actor(self)
             .then(|res, act, ctx| {
@@ -129,11 +148,22 @@ impl Actor for WebSocketSession {
     fn stopping(&mut self, ctx: &mut Self::Context) -> actix::Running {
         let addr = ctx.address();
         let session = self.get_user_session(addr);
+        let message_id  = match utils::generate_unique_id() {
+            Err(e)=> {
+                let v = "Failed to generate uuid".to_string();
+                println!("{}: {}",v, e.to_string());
+                v
+            }
+            Ok(v) => v
+        };
+
+        
         if let Some(session) = session {
             self.server.do_send(ServerMessage {
                 message: Disconnect {
                 },
                 session: session.to_owned(),
+                message_id: message_id
             });
         }
 

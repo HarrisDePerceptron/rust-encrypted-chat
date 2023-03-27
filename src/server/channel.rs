@@ -1,5 +1,7 @@
 
 
+use serde::Serialize;
+
 use crate::{server::UserSession, session::TextMessage};
 
 use crate::server::server_response::ServerResponse;
@@ -9,6 +11,13 @@ pub struct Channel {
     pub id: String,
     pub name: String,
     pub sessions: Vec<UserSession>,
+}
+
+
+
+#[derive(Debug, Serialize)]
+pub enum ChannelError{
+    AlreadyAdded(String)
 }
 
 
@@ -22,15 +31,19 @@ impl Channel {
     }
 
 
-    pub fn add_session(&mut self, session:  &UserSession) -> (){
+    pub fn add_session(&mut self, session:  &UserSession) -> Result<(), ChannelError>{
         let result = self.sessions.iter().position(|x| x.session_id==session.session_id);
 
         if let Some(_) = result {
-            println!("Session'{}' already added to channel {}", session.session_id, self.name);
+            let msg = format!("Session'{}' already added to channel {}", session.session_id, self.name);
+            return Err(ChannelError::AlreadyAdded(msg));
+            
         }else{
 
             self.sessions.push(session.clone());
         }
+
+        Ok(())
     }
 
     pub fn remove_session(&mut self, session: &UserSession) -> Option<UserSession>{
