@@ -10,13 +10,14 @@ use crate::server::{Channel, UserSession};
 use crate::session::{ErrorCode, TextMessage, WebSocketSession};
 
 use super::messages::ErrorMessage;
-use super::server_response::{self, ResponseError};
+
+use crate::server::server_response;
 use super::server_response::{
-    ConnectResponse, CountResponse, ResponseBase, SendChannelResponse, ServerResponse,
+    ConnectResponse, CountResponse, ResponseBase, SendChannelResponse, ServerResponse, ResponseError
 };
 use crate::server::channel;
 
-use crate::session::websocket_session::SessionContext;
+
 use crate::utils;
 
 pub struct WebSocketServer {
@@ -295,11 +296,11 @@ impl Handler<ServerMessage<SendChannel>> for WebSocketServer {
 
         let response_message = format!("Sent to channel {}", msg.channel_name);
         let data = server_response::ServerResponse::SendChannel(server_response::ResponseBase {
-            message: response_message.to_owned(),
+            message: msg.msg.to_owned(),
             message_id: msg.message_id.to_owned(),
             data: server_response::SendChannelResponse {},
         });
-        self.send_to_channel(&msg.channel_name, &msg.msg, Some(data));
+        self.send_to_channel(&msg.channel_name, &response_message, Some(data));
     }
 }
 

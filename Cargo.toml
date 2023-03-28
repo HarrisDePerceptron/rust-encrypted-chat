@@ -13,7 +13,8 @@ uuid = {version="1.3.0", features=["v4",  "fast-rng"]}
 actix = "0.13.0"
 actix-web-actors = "4.2.0"
 typetag = "0.2.7"
-
+actix-identity = "0.5.2"
+actix-session = { version="0.7.2", features = ["cookie-session"] }
 
 [profile.release]
 strip = true
