@@ -2,11 +2,16 @@
 
 
 ## TODO 
-- Websocket auth (token  cookies)
-- Message UUIDs time based
-- Database persistence
-- Scaling websockets (Stickty session?)
-- Chat Implementation 
+- [] Websocket auth (token  cookies)
+    * Secure
+    * CSRF?
+    * Bearer Token
+    * Cookie Token
+- [] Enable TLS/WSS
+- [x] Message UUIDs time based
+- [] Database persistence
+- [] Scaling websockets (Stickty session?)
+- [] Chat Implementation 
     * list rooms 
     * presence
     * create room
