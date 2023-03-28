@@ -7,9 +7,12 @@
     * CSRF?
     * Bearer Token
     * Cookie Token
+- [] DOT ENV File
 - [] Enable TLS/WSS
 - [x] Message UUIDs time based
 - [] Database persistence
+    * Redis
+    * Mongo
 - [] Scaling websockets (Stickty session?)
 - [] Chat Implementation 
     * list rooms 
