@@ -2,19 +2,19 @@
 
 
 ## TODO 
-- [] Websocket auth (token  cookies)
+- [ ] Websocket auth (token  cookies)
     * Secure
     * CSRF?
     * Bearer Token
     * Cookie Token
-- [] DOT ENV File
-- [] Enable TLS/WSS
+- [ ] DOT ENV File
+- [ ] Enable TLS/WSS
 - [x] Message UUIDs time based
-- [] Database persistence
+- [ ] Database persistence
     * Redis
     * Mongo
-- [] Scaling websockets (Stickty session?)
-- [] Chat Implementation 
+- [ ] Scaling websockets (Stickty session?)
+- [ ] Chat Implementation 
     * list rooms 
     * presence
     * create room
