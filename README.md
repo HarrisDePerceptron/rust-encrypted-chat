@@ -7,7 +7,7 @@
     * CSRF?
     * Bearer Token
     * Cookie Token
-- [ ] DOT ENV File
+- [x] DOT ENV File
 - [ ] Enable TLS/WSS
 - [x] Message UUIDs time based
 - [ ] Database persistence

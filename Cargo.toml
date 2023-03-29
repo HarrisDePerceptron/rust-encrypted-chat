@@ -15,6 +15,11 @@ actix-web-actors = "4.2.0"
 typetag = "0.2.7"
 actix-identity = "0.5.2"
 actix-session = { version="0.7.2", features = ["cookie-session"] }
+dotenv = "0.15.0"
+once_cell = "1.17.1"
+env_logger = "0.10.0"
+
+
 
 [profile.release]
 strip = true
