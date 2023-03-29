@@ -25,10 +25,7 @@ use env_logger::Env;
 async fn main() -> std::io::Result<()> {
 
     dotenv().ok().expect(".dot env file unable to load");
-
     env_logger::init_from_env(Env::default().default_filter_or("info"));
-
-
     // let secret_key = Key::generate();    
     let secret_key = Key::from(secrets::SESSION_KEY.as_bytes());
     
