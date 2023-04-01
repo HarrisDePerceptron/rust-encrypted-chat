@@ -6,6 +6,12 @@ use actix_web::{
 };
 
 
+use crate::auth;
+
+use crate::utils;
+
+use crate::secrets;
+
 
 #[get("/user")]
 async fn index(user: Option<Identity>) -> impl Responder {
@@ -18,15 +24,29 @@ async fn index(user: Option<Identity>) -> impl Responder {
 
 #[post("/login")]
 async fn login(request: HttpRequest) -> impl Responder {
-    // Some kind of authentication should happen here -
-    // e.g. password-based, biometric, etc.
-    // [...]
 
-    // Attached a verified user identity to the active
-    // session.
-    Identity::login(&request.extensions(), "User1".into()).unwrap();
+    let uid = match utils::generate_unique_id(){
+        Err(e)=> return HttpResponse::BadRequest().body(e.to_string()),
+        Ok(v) => v
+    };
 
-    HttpResponse::Ok()
+
+    let expiry: u64 = match secrets::TOKEN_EXPIRY_DAYS.to_string().parse(){
+        Err(e)=> return HttpResponse::BadRequest().body(format!("{:?}",e)),
+        Ok(v) => v
+    };
+
+    let token  = match auth::generate_token(&uid, 
+        &secrets::TOKEN_ISSUER.to_string(), 
+        expiry){
+            Err(e)=> return HttpResponse::BadRequest().body(e.to_string()),
+            Ok(v) => v
+        };
+
+    Identity::login(&request.extensions(), token.to_owned().into()).unwrap();
+
+    HttpResponse::Ok().body(token)
+
 }
 
 #[post("/logout")]

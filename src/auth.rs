@@ -8,15 +8,15 @@ use crate::secrets;
 
 
 use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey};
-
+use actix_web::http::header::HeaderMap;
 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct JWTClaims {
-    exp: usize,          // Required (validate_exp defaults to true in validation). Expiration time (as UTC timestamp)
-    iat: usize,          // Optional. Issued at (as UTC timestamp)
-    iss: String,         // Optional. Issuer
-    sub: String,         // Optional. Subject (whom token refers to)
+    pub exp: usize,          // Required (validate_exp defaults to true in validation). Expiration time (as UTC timestamp)
+    pub iat: usize,          // Optional. Issued at (as UTC timestamp)
+    pub iss: String,         // Optional. Issuer
+    pub sub: String,         // Optional. Subject (whom token refers to)
 }
 
 
@@ -72,5 +72,8 @@ pub fn decode_token(token: String) -> Result<JWTClaims, String> {
     return Ok(result);
 
 }
+
+
+
 
 
