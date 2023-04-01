@@ -28,26 +28,6 @@ async fn main() -> std::io::Result<()> {
 
 
     let secret_key = Key::from(secrets::SESSION_KEY.as_bytes());
-    println!("Secret key: {:?}", secret_key.master());
-
-    let token = auth::generate_token(2).unwrap();
-    println!("Token is: `{}`", token);
-
-
-    let decode_claim = auth::decode_token(token).unwrap();
-
-    println!("Decode claim: {:?}", decode_claim);
-
-    // let mut validation = Validation::new(Algorithm::HS256);
-    // validation.validate_exp = false;
-    // validation.required_spec_claims.remove("exp");
-
-
-    // let token = decode::<EmptyClaim>(&token, &DecodingKey::from_secret("secret".as_ref()), &validation).unwrap();
-    // println!("token got back: {:?}", token);
-
-
-    // let secret_key = Key::generate();
 
     let server = WebSocketServer::new();
     let server_addr = server.start();
