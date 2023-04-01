@@ -17,11 +17,16 @@ pub enum TimeUnit {
     MILLISECONDS(u128)
 }
 
-pub fn get_current_timestamp() -> Result<TimeUnit, String> {
+
+pub struct SECONDS(pub u64);
+
+
+pub fn get_current_timestamp() -> Result<SECONDS, String> {
     let iat = match SystemTime::now().duration_since(UNIX_EPOCH) {
         Err(e) => return Err(e.to_string()),
         Ok(v) => v,
     };
     let elasped = iat.as_secs();
-    return Ok(TimeUnit::SECONDS(elasped));
+    return Ok(SECONDS(elasped));
 }
+

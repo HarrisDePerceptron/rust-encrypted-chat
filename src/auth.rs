@@ -22,13 +22,9 @@ pub struct JWTClaims {
 
 pub fn generate_token(subject: &str, issuer: &str, expiry_days: u64) -> Result<String, String>{
 
-    let elasped = match utils::get_current_timestamp(){
-        Err(e) => return Err(e),
-        Ok(v) => match v{
-            utils::TimeUnit::SECONDS(s) => s,
-            _ => return Err("time stamp should be in seconds".to_string())
-        }
-
+    let utils::SECONDS(elasped) = match utils::get_current_timestamp() {
+        Err(e)=> return Err(e),
+        Ok(v) => v
     };
 
 
