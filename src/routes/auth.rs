@@ -14,8 +14,13 @@ use crate::secrets;
 use crate::middleware::auth_extractor;
 
 #[get("/user")]
-async fn index(user: Option<Identity>, auth: auth_extractor::AuthExtractor) -> impl Responder {
-    println!("auth user id: {}", auth.user_id);
+async fn index(user: Option<Identity>, auth: Option<auth_extractor::AuthExtractor>) -> impl Responder {
+
+    if let Some(auth) = auth{
+        println!("auth user id: {}", auth.user_id);
+    }
+
+    
     if let Some(user) = user {
         format!("Welcome! {}", user.id().unwrap())
     } else {
