@@ -17,7 +17,7 @@ use actix_web::middleware::Logger;
 use env_logger::Env;
 
 
-use encrypted_chat::auth;
+use encrypted_chat::middleware::auth_middleware;
 
 
 
@@ -42,6 +42,7 @@ async fn main() -> std::io::Result<()> {
         let state = web::Data::new(server_addr.clone());
 
         App::new()
+        .wrap(auth_middleware::SayHi{})
             .wrap(Logger::new("%a %{User-Agent}i"))
             .wrap(IdentityMiddleware::default())
             .wrap(session_mw)

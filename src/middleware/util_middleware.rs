@@ -1,6 +1,6 @@
 use actix_web::http::header::HeaderMap;
 use actix_identity::Identity;
-
+use crate::auth;
 
 
 pub fn parse_jwt_token_header(token: &str) -> Result<String, String> {
@@ -64,4 +64,63 @@ pub fn parse_header_token(headers: &HeaderMap) -> Result<String, String> {
     };
     
     return Ok(token_jwt);
+}
+
+
+pub fn extract_token_cookie_or_header(identity: &Option<Identity>, headers: &HeaderMap) -> Result<auth::JWTClaims, String>{
+
+    let mut token_jwt: String = String::new();
+
+    let mut cookie_available = false;
+
+    let mut auth_header_available = false;
+
+    let mut token_jwt_cookie: String = String::new();
+    let mut token_jwt_header: String = String::new();
+
+    let mut cookie_errors = String::new();
+
+
+    match self::parse_cookie(identity) {
+        Err(e) => {
+            cookie_errors = e;
+        }
+        Ok(v) => {
+            token_jwt_cookie = v;
+            cookie_available = true;
+        }
+    };
+
+
+    let mut auth_headers_errors = String::new();
+
+    match self::parse_header_token(&headers) {
+        Err(e) => {
+            auth_headers_errors = e;
+        }
+        Ok(v) => {
+            token_jwt_header = v;
+            auth_header_available = true;
+        }
+    };
+
+    if !cookie_available && !auth_header_available {
+
+        let errors = format!("Unauthorized. auth not found in cookie or auth header: {}, {}", cookie_errors, auth_headers_errors);
+        return Err(errors);
+    }
+
+    if cookie_available {
+        token_jwt = token_jwt_cookie;
+    } else if auth_header_available {
+        token_jwt = token_jwt_header;
+    }
+
+    let token_decode = match auth::decode_token(token_jwt) {
+        Err(e) => return Err(e),
+        Ok(v) => v,
+    };
+
+    return Ok(token_decode);
+
 }

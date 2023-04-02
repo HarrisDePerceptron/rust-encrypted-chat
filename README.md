@@ -3,10 +3,10 @@
 
 ## TODO 
 - [ ] Websocket auth (token  cookies)
-    * [ ] Secure
+    * [x] Secure
     * CSRF?
-    * Bearer Token
-    * Cookie Token
+    * [x] Bearer Token
+    * [x] Cookie Token
 - [x] DOT ENV File
 - [ ] Enable TLS/WSS
 - [x] Message UUIDs time based

@@ -11,10 +11,11 @@ use crate::auth;
 use crate::utils;
 
 use crate::secrets;
-
+use crate::middleware::auth_extractor;
 
 #[get("/user")]
-async fn index(user: Option<Identity>) -> impl Responder {
+async fn index(user: Option<Identity>, auth: auth_extractor::AuthExtractor) -> impl Responder {
+    println!("auth user id: {}", auth.user_id);
     if let Some(user) = user {
         format!("Welcome! {}", user.id().unwrap())
     } else {
