@@ -19,12 +19,16 @@ use env_logger::Env;
 
 use encrypted_chat::middleware::auth_middleware;
 
-
+use encrypted_chat::persistence;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok().expect(".dot env file unable to load");
     env_logger::init_from_env(Env::default().default_filter_or("info"));
+
+    persistence::redis::connect().await.unwrap();
+  
+    
 
 
     let secret_key = Key::from(secrets::SESSION_KEY.as_bytes());

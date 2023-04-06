@@ -9,7 +9,7 @@
     * [x] Cookie Token
     * [x] Auth Extractors
     * [] Exposing authenticated user in websockets
-    * [] JWT verification without decoding
+    * [x] JWT verify only(expiry)
 - [x] DOT ENV File
 - [ ] Enable TLS/WSS
 - [x] Message UUIDs time based

@@ -74,6 +74,23 @@ pub fn decode_token(token: String) -> Result<JWTClaims, String> {
 }
 
 
+pub fn verify_token(token: &str) -> Result<bool, String> {
+    let mut validation= Validation::default();
+    validation.validate_exp = true;
+    validation.insecure_disable_signature_validation();
+
+    let dummy_key = DecodingKey::from_secret(&[]);
+
+    let data = match decode::<JWTClaims>(token, &dummy_key, &validation){
+        Ok(v) => v,
+        Err(e)=> return Err(e.to_string())
+    };
+
+    
+    return Ok(true);
+
+}
+
 
 
 

@@ -2,7 +2,7 @@
 use actix_identity::{Identity, IdentityMiddleware};
 
 use actix_web::{
-    get, post, HttpMessage, HttpRequest, HttpResponse, Responder,
+    get, post, HttpMessage, HttpRequest, HttpResponse, Responder, web
 };
 
 
@@ -12,6 +12,8 @@ use crate::utils;
 
 use crate::secrets;
 use crate::middleware::auth_extractor;
+
+use serde::{Deserialize, Serialize};
 
 #[get("/user")]
 async fn index(user: Option<Identity>, auth: Option<auth_extractor::AuthExtractor>) -> impl Responder {
@@ -27,6 +29,28 @@ async fn index(user: Option<Identity>, auth: Option<auth_extractor::AuthExtracto
         "Welcome Anonymous!".to_owned()
     }
 }
+
+
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct VerifyRequest{
+    pub token: String,
+    
+}
+
+#[post("/verify")]
+async fn verify(param: web::Json<VerifyRequest>,) -> impl Responder {
+    let token = &param.token;
+    
+    let result = match auth::verify_token(token){
+        Err(e)=> return HttpResponse::BadRequest().body(e.to_string()),
+        Ok(v)=> v
+    };
+
+    HttpResponse::Ok().body("verified")
+}
+
+
 
 #[post("/login")]
 async fn login(request: HttpRequest) -> impl Responder {
