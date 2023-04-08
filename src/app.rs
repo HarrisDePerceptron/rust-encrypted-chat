@@ -19,6 +19,7 @@ pub fn config_app(cfg: &mut web::ServiceConfig){
         .service(index)
         .service(login)
         .service(logout)
-        .service(auth::verify);
+        .service(auth::verify)
+        .service(auth::signup);
 
 }

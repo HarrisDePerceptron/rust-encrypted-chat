@@ -2,9 +2,11 @@
 use actix_identity::{Identity, IdentityMiddleware};
 
 use actix_web::{
-    get, post, HttpMessage, HttpRequest, HttpResponse, Responder, web
+    get, post, HttpMessage, HttpRequest, HttpResponse, Responder, web, Result, error
 };
 
+use std::sync::Mutex;
+use redis::AsyncCommands;
 
 use crate::auth;
 
@@ -14,6 +16,8 @@ use crate::secrets;
 use crate::middleware::auth_extractor;
 
 use serde::{Deserialize, Serialize};
+
+use crate::persistence::redis::RedisProvider;
 
 #[get("/user")]
 async fn index(user: Option<Identity>, auth: Option<auth_extractor::AuthExtractor>) -> impl Responder {
@@ -48,6 +52,55 @@ async fn verify(param: web::Json<VerifyRequest>,) -> impl Responder {
     };
 
     HttpResponse::Ok().body("verified")
+}
+
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct SignupRequest{
+    pub username: String,
+    pub password: String,
+    
+}
+#[post("/signup")]
+async fn signup(param: web::Json<SignupRequest>, redis: web::Data<Mutex<RedisProvider>>) -> Result<HttpResponse> {
+    let username = &param.username;
+    let password = &param.password;
+
+
+    let mut redis = redis.lock()
+                    .map_err(|e| error::ErrorBadRequest(e.to_string()))?;
+                    
+
+    let conn= redis.get_connection().await.map_err(|e| error::ErrorBadRequest("Redis connection error".to_string()))?;
+    
+
+    let user_id = utils::generate_unique_id().map_err(|e|error::ErrorBadRequest(e.to_string()))?;
+
+    let user_key =  format!("user:{}", user_id);
+    let user_data = format!("{}:{}", username, password);
+
+
+
+    conn.set(user_key.to_string(), user_data).await.map_err(|e|error::ErrorBadRequest(e.to_string()))?;
+
+
+
+        // redis::cmd("SET")
+        //     .arg(&["key2", "bar"])
+        //     .query_async(&mut con)
+        //     .await?;
+
+        // let result: String = redis::cmd("MGET")
+        //     .arg(&[&user_key])
+        //     .query_async(conn)
+        //     .await.map_err(|e|error::ErrorBadRequest(e.to_string()))?;
+
+        let result: String = conn.get(&user_key)
+                                .await.map_err(|e|error::ErrorBadRequest(e.to_string()))?;
+
+
+    
+    Ok(HttpResponse::Ok().body(format!("signup complete: {}", result)))
 }
 
 
