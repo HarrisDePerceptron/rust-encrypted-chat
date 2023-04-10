@@ -21,7 +21,7 @@ env_logger = "0.10.0"
 jsonwebtoken = "8.3.0"
 futures-util = "0.3.28"
 redis = { version = "0.23.0", features = ["tokio-comp"] }
-
+async-trait = "0.1.68"
 
 [profile.release]
 strip = true

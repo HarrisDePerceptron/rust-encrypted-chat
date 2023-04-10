@@ -13,7 +13,7 @@ pub struct RedisProvider {
 }
 
 pub struct RedisProviderError {
-    reason: String,
+    pub reason: String,
 }
 
 impl RedisProvider {
