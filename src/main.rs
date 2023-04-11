@@ -24,9 +24,18 @@ use std::sync::{Mutex};
 
 
 
-use encrypted_chat::business::user::service::{UserService, UserServiceError};
-use encrypted_chat::business::user::model::{User, SignupRequest};
-use encrypted_chat::business::service_redis::{RedisApplicationService};
+// use encrypted_chat::business::user::service::{UserService, UserServiceError};
+// use encrypted_chat::business::user::model::{User, SignupRequest};
+// use encrypted_chat::business::service_redis::{RedisApplicationService};
+
+
+use encrypted_chat::business::user::factory::{UserFactory};
+use encrypted_chat::business::user::model::{SignupRequest};
+use encrypted_chat::business::service_redis::{RedisFactory};
+
+use encrypted_chat::business::application_factory::{FactoryTrait};
+
+
 
 
 #[actix_web::main]
@@ -36,32 +45,42 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(Env::default().default_filter_or("info"));
     let mut provider = persistence::redis::RedisProvider::new();
 
-    let mut redis_service = RedisApplicationService::new("user", &mut provider);
+    // let mut redis_service = RedisApplicationService::new("user", &mut provider);
+    // let mut u_f = UserFactory::new(&mut redis_service);
     
-    let mut user_service = UserService::new(&mut redis_service);
+
+    let mut r_f = RedisFactory::new("user", &mut provider);
+    let mut u_f = UserFactory::new(r_f.get());
+
+
+    let user_service = u_f.get();
+
+
+    
+    // let mut user_service = UserService::new(&mut redis_service);
 
     let user = SignupRequest{
-        username: "test1".to_string(),
-        password: "password".to_string()
+        username: "user1".to_string(),
+        password: "password1".to_string()
     };
     
 
-    // let res = user_service.signup(user).await.unwrap();
-    // println!("application user created: {:?}", res);
+    let res = user_service.signup(user).await.unwrap();
+    println!("application user created: {:?}", res);
 
     let res = user_service.get(20).await.unwrap();
     println!("application users get: {:?}", res);
 
 
-    let mut m = res[1].clone();
-    m.data.password = "new password 101".to_string();
+    // let mut m = res[1].clone();
+    // m.data.password = "new password 101".to_string();
 
-    m.id = Some("whdsdjask".to_string());
+    // m.id = Some("whdsdjask".to_string());
 
-    println!("udpating with id: {:?}", m.id);
+    // println!("udpating with id: {:?}", m.id);
 
-    let res = user_service.update(m).await.unwrap();
-    println!("application users update: {:?}", res);
+    // let res = user_service.update(m).await.unwrap();
+    // println!("application users update: {:?}", res);
    
     
     let secret_key = Key::from(secrets::SESSION_KEY.as_bytes());

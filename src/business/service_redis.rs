@@ -7,12 +7,15 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json;
 
 use async_trait::async_trait;
+use crate::persistence;
 
 use crate::persistence::redis::{RedisProvider, RedisProviderError};
 use redis::AsyncCommands;
 use redis::Commands;
 
 use crate::utils;
+
+use crate::business::application_factory::FactoryTrait;
 
 pub struct RedisApplicationService<'a> {
     provider: &'a mut RedisProvider,
@@ -204,4 +207,51 @@ where
 
         Ok(id.to_string())
     }
+}
+
+
+
+
+pub struct RedisFactory<'a, 'b> 
+where
+    'a: 'b
+{
+    service: Option<RedisApplicationService<'a>>,
+    redis_provider: &'b mut persistence::redis::RedisProvider,
+    schema_name: String
+}
+
+impl<'a, 'b> RedisFactory<'a, 'b>
+where 
+    'b: 'a
+{
+    pub fn new(schema_name: &str, provider: &'b mut persistence::redis::RedisProvider) -> Self{
+        Self { service: None, redis_provider:  provider, schema_name: schema_name.to_string() }
+    }
+}
+
+impl<'a, 'b> FactoryTrait<'a> for RedisFactory<'a, 'b> 
+    where 
+        'b: 'a
+{
+    type Service = RedisApplicationService<'a>;
+
+    fn get(&'a mut self) -> &'a mut Self::Service  {
+        if let None = self.service{
+            let service = Self::Service::new(&self.schema_name, self.redis_provider);
+
+            self.service = Some(service);
+            
+            match &mut self.service {
+                None => panic!("Should be set"),
+                Some(v) => v
+            }
+        }else {
+            match &mut self.service {
+                None => panic!("Should be set"),
+                Some(v) => v
+            }
+        }
+    }
+
 }
