@@ -9,4 +9,12 @@ pub struct User {
 }
 
 
-pub type UserModel = ApplicationModel<User>;
+
+#[derive(Debug, Clone)]
+pub struct SignupRequest {
+    pub username: String,
+    pub password: String,
+}
+
+
+

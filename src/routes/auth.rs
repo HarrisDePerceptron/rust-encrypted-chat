@@ -71,7 +71,7 @@ async fn signup(param: web::Json<SignupRequest>, redis: web::Data<Mutex<RedisPro
                     .map_err(|e| error::ErrorBadRequest(e.to_string()))?;
                     
 
-    let conn= redis.get_connection().await.map_err(|e| error::ErrorBadRequest("Redis connection error".to_string()))?;
+    let mut conn= redis.get_connection().await.map_err(|e| error::ErrorBadRequest("Redis connection error".to_string()))?;
     
 
     let user_id = utils::generate_unique_id().map_err(|e|error::ErrorBadRequest(e.to_string()))?;
@@ -80,10 +80,8 @@ async fn signup(param: web::Json<SignupRequest>, redis: web::Data<Mutex<RedisPro
     let user_data = format!("{}:{}", username, password);
 
 
-
     conn.set(user_key.to_string(), user_data).await.map_err(|e|error::ErrorBadRequest(e.to_string()))?;
-
-
+    
 
         // redis::cmd("SET")
         //     .arg(&["key2", "bar"])

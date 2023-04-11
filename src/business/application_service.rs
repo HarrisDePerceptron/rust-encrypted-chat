@@ -1,8 +1,8 @@
 
 use std::fmt::Debug;
 
-use serde::{Serialize, Deserialize};
-use crate::business::application_model::ApplicationModel;
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use crate::business::application_model::{ApplicationModel, ApplicationModelTrait};
 
 use std::future::Future;
 use async_trait::async_trait;
@@ -18,15 +18,14 @@ pub enum ApplicationServiceError{
 }
 
 #[async_trait]
-pub trait ApplicationServiceTrait<'a,T>
-    where 
-        T: Debug + Serialize + Clone + Deserialize<'a> + 'static
+pub trait ApplicationServiceTrait <T>
+where 
+    T: Debug + Serialize + Clone + DeserializeOwned + 'static
  {
-    type Model: Debug + Serialize + Clone;
-
-
+    type Model: ApplicationModelTrait<T>;
+    
     async fn create(&mut self, data: Self::Model) -> Result<Self::Model, ApplicationServiceError>;
-    async fn find(&mut self) ->  Result<Vec<Self::Model>, ApplicationServiceError>;
+    async fn find(&mut self, count: usize) ->  Result<Vec<Self::Model>, ApplicationServiceError>;
     async fn find_by_id(&mut self, id: &str) -> Result<Self::Model, ApplicationServiceError>;
 
     async fn update_by_id(&mut self, data: Self::Model) ->  Result<Self::Model, ApplicationServiceError>;

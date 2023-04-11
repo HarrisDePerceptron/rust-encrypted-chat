@@ -8,6 +8,13 @@ use redis::aio;
 use actix::fut::{ready, Ready};
 use actix_web::web;
 
+use std::borrow::Borrow;
+use std::borrow::BorrowMut;
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+
+use std::cell::{RefCell};
+
 pub struct RedisProvider {
     connection: Option<aio::Connection>,
 }
@@ -24,28 +31,11 @@ impl RedisProvider {
         let client = redis::Client::open("redis://:87654321@localhost:6379").unwrap();
         let con = client.get_async_connection().await?;
 
-        // con.set("key1", b"foo").await?;
-
-        // redis::cmd("SET")
-        //     .arg(&["key2", "bar"])
-        //     .query_async(&mut con)
-        //     .await?;
-
-        // let result = redis::cmd("MGET")
-        //     .arg(&["key1", "key2"])
-        //     .query_async(&mut con)
-        //     .await;
-        // assert_eq!(result, Ok(("foo".to_string(), b"bar".to_vec())));
-
-        // Ok(())
 
         Ok(con)
     }
 
     pub async fn get_connection(&mut self) -> Result<&mut aio::Connection, RedisProviderError> {
-        // if let Some(connection) = &self.connection {
-        //     return Ok(connection);
-        // }
 
         if let None  = self.connection {
 
@@ -54,16 +44,17 @@ impl RedisProvider {
             })?;
     
             self.connection = Some(connection);
-    
-            return match &mut self.connection {
-                Some(v) => Ok(v),
-                None => panic!("Connection should be set to class instance"),
-            };
+
+            match &mut self.connection {
+                None => panic!("should be set"),
+                Some(v) => Ok(v)
+            }
+            
         }else{
 
             match &mut self.connection {
-                Some(v)=> Ok(v),
-                None => panic!("Connection should be set to class instance")
+                None => panic!("should be set"),
+                Some(v) => Ok(v)
             }
         }
 

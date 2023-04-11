@@ -22,16 +22,52 @@ use encrypted_chat::persistence;
 // use futures_util::lock::Mutex;
 use std::sync::{Mutex};
 
+
+
+use encrypted_chat::business::user::service::{UserService, UserServiceError};
+use encrypted_chat::business::user::model::{User, SignupRequest};
+use encrypted_chat::business::service_redis::{RedisApplicationService};
+
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok().expect(".dot env file unable to load");
     std::env::set_var("RUST_LOG", "debug");
     env_logger::init_from_env(Env::default().default_filter_or("info"));
+    let mut provider = persistence::redis::RedisProvider::new();
+
+    let mut redis_service = RedisApplicationService::new("user", &mut provider);
+    
+    let mut user_service = UserService::new(&mut redis_service);
+
+    let user = SignupRequest{
+        username: "test1".to_string(),
+        password: "password".to_string()
+    };
+    
+
+    // let res = user_service.signup(user).await.unwrap();
+    // println!("application user created: {:?}", res);
+
+    let res = user_service.get(20).await.unwrap();
+    println!("application users get: {:?}", res);
+
+
+    let mut m = res[1].clone();
+    m.data.password = "new password 101".to_string();
+
+    m.id = Some("whdsdjask".to_string());
+
+    println!("udpating with id: {:?}", m.id);
+
+    let res = user_service.update(m).await.unwrap();
+    println!("application users update: {:?}", res);
+   
     
     let secret_key = Key::from(secrets::SESSION_KEY.as_bytes());
 
     // let conn  = persistence::redis::connect().await.unwrap();
-    let mut provider = persistence::redis::RedisProvider::new();
+
     let err = std::io::Error::new(
         std::io::ErrorKind::ConnectionReset,
         "Redis connection error".to_string(),

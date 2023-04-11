@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 use std::fmt::{Debug};
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize,de::DeserializeOwned};
 
 
 #[derive(Debug, Serialize, Deserialize,Clone)]
@@ -9,6 +9,27 @@ pub struct ApplicationModel<T>
     pub id: Option<String>,
     pub data: T
 
+}
+
+pub trait ApplicationModelTrait<T> 
+where
+    T: Clone + Debug + DeserializeOwned + Serialize + 'static
+{
+    fn id(&self) -> Option<String>;
+    fn data(&self) ->  T;
+}
+
+impl<T> ApplicationModelTrait<T> for  ApplicationModel<T>
+where 
+    T: Clone + Debug + DeserializeOwned + Serialize + 'static
+{
+    fn id(&self) -> Option<String> {
+        self.id.to_owned()
+    }
+
+    fn data(&self) ->  T {
+        self.data.to_owned()
+    }
 }
 
 impl<'a, T> Deref for ApplicationModel<T> 
