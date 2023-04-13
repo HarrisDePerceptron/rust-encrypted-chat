@@ -10,3 +10,4 @@ pub mod auth;
 pub mod middleware;
 pub mod persistence;
 pub mod business;
+pub mod application_factory;

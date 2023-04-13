@@ -1,24 +1,28 @@
-use crate::business::service_redis::RedisApplicationService;
+use crate::app::service_redis::RedisApplicationService;
 
-use super::model::{SignupRequest, User};
-use crate::business::application_service::{ApplicationServiceError, ApplicationServiceTrait};
+use super::model::{User};
+use crate::app::application_service::{ApplicationServiceError, ApplicationServiceTrait};
 use async_trait::async_trait;
 
 use serde::Serialize;
 use serde_json;
 
 
-use crate::business::application_model::ApplicationModel;
+use crate::app::application_model::ApplicationModel;
+use super::service_model;
+
+
 
 use crate::auth;
 
 
-pub struct UserService<'a> {
-    redis_service: &'a mut RedisApplicationService<'a>,
+
+pub struct UserService {
+    redis_service: RedisApplicationService,
 }
 
-impl<'a> UserService<'a> {
-    pub fn new(redis_service: &'a mut RedisApplicationService<'a>) -> Self {
+impl UserService {
+    pub fn new(redis_service: RedisApplicationService) -> Self {
         Self { 
             redis_service:  redis_service
         }
@@ -32,10 +36,10 @@ pub enum UserServiceError {
     UpdateError(String)
 }
 
-impl<'a> UserService<'a> {
+impl UserService {
     pub async fn signup(
         &mut self,
-        request: SignupRequest,
+        request: service_model::SignupRequest,
     ) -> Result<ApplicationModel<User>, UserServiceError> {
 
         let hash = auth::hash_password(&request.password)
@@ -88,4 +92,5 @@ impl<'a> UserService<'a> {
 
         Ok(result)
     }
+
 }

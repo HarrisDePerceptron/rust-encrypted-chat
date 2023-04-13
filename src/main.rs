@@ -3,6 +3,7 @@ use actix_web::{web, App, HttpServer};
 
 use encrypted_chat::app::config_app;
 
+use encrypted_chat::persistence::redis::RedisProvider;
 use encrypted_chat::server::WebSocketServer;
 
 use actix_identity::{Identity, IdentityMiddleware};
@@ -22,11 +23,8 @@ use encrypted_chat::persistence;
 // use futures_util::lock::Mutex;
 use std::sync::Mutex;
 
-// use encrypted_chat::business::user::factory::{UserFactory};
-// use encrypted_chat::business::user::model::{SignupRequest};
-// use encrypted_chat::business::service_redis::{RedisFactory};
-
-// use encrypted_chat::business::application_factory::{FactoryTrait};
+use encrypted_chat::app::user::factory::{UserFactory};
+use encrypted_chat::app::application_factory::{ServiceFactory};
 
 use encrypted_chat::auth;
 
@@ -52,6 +50,19 @@ async fn main() -> std::io::Result<()> {
     let server = WebSocketServer::new();
     let server_addr = server.start();
 
+    let mut user_factory = UserFactory::new();
+    let mut user_factory2 = UserFactory::new();
+
+    let mut sf = ServiceFactory {
+        user: user_factory,
+        user2: user_factory2
+
+    };
+
+
+    let factory_state = web::Data::new(sf);
+
+
     let server = HttpServer::new(move || {
         let session_mw =
             SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
@@ -68,6 +79,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(session_mw)
             .app_data(state.clone())
             .app_data(redis_state.clone())
+            .app_data(factory_state.clone())
             .configure(config_app)
     })
     .bind(("127.0.0.1", 8085))?

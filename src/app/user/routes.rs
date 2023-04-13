@@ -7,6 +7,7 @@ use std::sync::Mutex;
 
 use crate::auth;
 
+use crate::app::application_factory::FactoryTrait;
 use crate::utils;
 
 use crate::middleware::auth_extractor;
@@ -15,6 +16,11 @@ use crate::secrets;
 use serde::{Deserialize, Serialize};
 
 use crate::persistence::redis::RedisProvider;
+use crate::app::application_factory::ServiceFactory;
+use super::routes_model;
+use super::service_model;
+
+
 
 #[get("/user")]
 async fn index(
@@ -58,34 +64,26 @@ pub struct SignupRequest {
 async fn signup(
     param: web::Json<SignupRequest>,
     redis: web::Data<Mutex<RedisProvider>>,
+    service_factory: web::Data<ServiceFactory>
 ) -> Result<HttpResponse> {
-    let username = &param.username;
-    let password = &param.password;
 
-    let mut redis = redis
-        .lock()
-        .map_err(|e| error::ErrorBadRequest(e.to_string()))?;
+    let uf = &service_factory.user;
 
-    let mut conn = redis
-        .get_connection()
+    let mut us = uf.get();
+
+    let signup_request = service_model::SignupRequest{
+        username: param.username.to_string(),
+        password: param.password.to_string()
+    };
+
+    let result = us.signup(signup_request)
         .await
-        .map_err(|e| error::ErrorBadRequest("Redis connection error".to_string()))?;
+        .map_err(|e| error::ErrorBadRequest(format!("{:?}", e)))?;
 
-    let user_id = utils::generate_unique_id().map_err(|e| error::ErrorBadRequest(e.to_string()))?;
 
-    let user_key = format!("user:{}", user_id);
-    let user_data = format!("{}:{}", username, password);
 
-    conn.set(user_key.to_string(), user_data)
-        .await
-        .map_err(|e| error::ErrorBadRequest(e.to_string()))?;
+    Ok(HttpResponse::Ok().body(format!("signup complete: {:?}", result)))
 
-    let result: String = conn
-        .get(&user_key)
-        .await
-        .map_err(|e| error::ErrorBadRequest(e.to_string()))?;
-
-    Ok(HttpResponse::Ok().body(format!("signup complete: {}", result)))
 }
 
 #[post("/login")]

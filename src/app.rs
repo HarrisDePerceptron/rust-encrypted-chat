@@ -1,3 +1,14 @@
+pub mod user;
+pub mod application_model;
+pub mod application_service;
+
+
+pub mod service_redis;
+pub mod application_factory;
+
+
+
+
 use actix::Actor;
 use actix_web::{web, App};
 
@@ -10,7 +21,6 @@ use crate::routes::websocket_route::websocket_index;
 // use crate::routes::auth::{index, login, logout, self};
 // use crate::business::user::routes::{index, login, logout, verify};
 
-use crate::business::user;
 
 
 pub fn config_app(cfg: &mut web::ServiceConfig){

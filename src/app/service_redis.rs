@@ -1,8 +1,8 @@
 use std::borrow::BorrowMut;
 use std::fmt::Debug;
 
-use crate::business::application_model::ApplicationModel;
-use crate::business::application_service::{ApplicationServiceError, ApplicationServiceTrait};
+use crate::app::application_model::ApplicationModel;
+use crate::app::application_service::{ApplicationServiceError, ApplicationServiceTrait};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json;
 
@@ -15,15 +15,15 @@ use redis::Commands;
 
 use crate::utils;
 
-use crate::business::application_factory::FactoryTrait;
+use crate::app::application_factory::FactoryTrait;
 
-pub struct RedisApplicationService<'a> {
-    provider: &'a mut RedisProvider,
+pub struct RedisApplicationService {
+    provider: RedisProvider,
     name: String,
 }
 
-impl<'a> RedisApplicationService<'a> {
-    pub fn new(name: &str, provider: &'a mut RedisProvider) -> Self {
+impl RedisApplicationService {
+    pub fn new(name: &str, provider: RedisProvider) -> Self {
         Self {
             provider: provider,
             name: name.to_string(),
@@ -92,7 +92,7 @@ impl<'a> RedisApplicationService<'a> {
 }
 
 #[async_trait]
-impl<'a, T> ApplicationServiceTrait<T> for RedisApplicationService<'a>
+impl<T> ApplicationServiceTrait<T> for RedisApplicationService
 where
     T: Debug + Serialize + Clone + DeserializeOwned + Send + 'static,
 {
@@ -210,48 +210,27 @@ where
 }
 
 
-
-
-pub struct RedisFactory<'a, 'b> 
-where
-    'a: 'b
+pub struct RedisFactory
 {
-    service: Option<RedisApplicationService<'a>>,
-    redis_provider: &'b mut persistence::redis::RedisProvider,
     schema_name: String
 }
 
-impl<'a, 'b> RedisFactory<'a, 'b>
-where 
-    'b: 'a
+impl RedisFactory
 {
-    pub fn new(schema_name: &str, provider: &'b mut persistence::redis::RedisProvider) -> Self{
-        Self { service: None, redis_provider:  provider, schema_name: schema_name.to_string() }
+    pub fn new(schema_name: &str) -> Self{
+
+        Self { schema_name: schema_name.to_string() }
     }
 }
 
-impl<'a, 'b> FactoryTrait<'a> for RedisFactory<'a, 'b> 
-    where 
-        'b: 'a
+impl FactoryTrait for RedisFactory
 {
-    type Service = RedisApplicationService<'a>;
+    type Service = RedisApplicationService;
 
-    fn get(&'a mut self) -> &'a mut Self::Service  {
-        if let None = self.service{
-            let service = Self::Service::new(&self.schema_name, self.redis_provider);
-
-            self.service = Some(service);
-            
-            match &mut self.service {
-                None => panic!("Should be set"),
-                Some(v) => v
-            }
-        }else {
-            match &mut self.service {
-                None => panic!("Should be set"),
-                Some(v) => v
-            }
-        }
+    fn get(&self) -> Self::Service  {
+        let redis_provider = persistence::redis::RedisProvider::new();
+        let service = Self::Service::new(&self.schema_name, redis_provider);
+        service
     }
 
 }

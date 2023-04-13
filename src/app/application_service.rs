@@ -2,7 +2,7 @@
 use std::fmt::Debug;
 
 use serde::{Serialize, Deserialize, de::DeserializeOwned};
-use crate::business::application_model::{ApplicationModel, ApplicationModelTrait};
+use crate::app::application_model::{ApplicationModel, ApplicationModelTrait};
 
 use std::future::Future;
 use async_trait::async_trait;
