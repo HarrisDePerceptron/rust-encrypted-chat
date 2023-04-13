@@ -7,7 +7,11 @@ use async_trait::async_trait;
 use serde::Serialize;
 use serde_json;
 
+
 use crate::business::application_model::ApplicationModel;
+
+use crate::auth;
+
 
 pub struct UserService<'a> {
     redis_service: &'a mut RedisApplicationService<'a>,
@@ -33,9 +37,14 @@ impl<'a> UserService<'a> {
         &mut self,
         request: SignupRequest,
     ) -> Result<ApplicationModel<User>, UserServiceError> {
+
+        let hash = auth::hash_password(&request.password)
+            .map_err(|e| UserServiceError::SignupError(e))?;
+
+        
         let user = User {
             username: request.username,
-            password: request.password,
+            password: hash,
         };
 
         let user_a = ApplicationModel {

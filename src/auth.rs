@@ -1,4 +1,5 @@
 
+use actix_web::body::MessageBody;
 use serde::{Serialize, Deserialize};
 use std::fmt::{Debug};
 
@@ -8,7 +9,15 @@ use crate::secrets;
 
 
 use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey};
-use actix_web::http::header::HeaderMap;
+
+
+use argon2::{
+    password_hash::{
+        rand_core::OsRng,
+        PasswordHash, PasswordHasher, PasswordVerifier, SaltString
+    },
+    Argon2
+};
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -73,7 +82,6 @@ pub fn decode_token(token: String) -> Result<JWTClaims, String> {
 
 }
 
-
 pub fn verify_token(token: &str) -> Result<bool, String> {
     let mut validation= Validation::default();
     validation.validate_exp = true;
@@ -93,4 +101,34 @@ pub fn verify_token(token: &str) -> Result<bool, String> {
 
 
 
+
+
+pub fn hash_password(phrase: &str) -> Result<String, String> {
+
+    
+    let password = phrase.as_bytes();
+
+    let salt = SaltString::generate(&mut OsRng);
+   
+    
+    // Argon2 with default params (Argon2id v19)
+    let argon2 = Argon2::default();
+    
+    // Hash password to PHC string ($argon2id$v=19$...)
+    let password_hash = argon2.hash_password(password, &salt)
+        .map_err(|e| e.to_string())?
+        .to_string();
+
+    
+    return Ok(password_hash);
+    
+}
+
+
+pub fn verify_password_hash(phrase: &str, hash: &str) -> Option<bool> {
+    let parsed_hash = PasswordHash::new(&hash).ok()?;
+    let is_ok = Argon2::default().verify_password(phrase.as_bytes(), &parsed_hash).is_ok();
+
+    Some(is_ok)
+}
 

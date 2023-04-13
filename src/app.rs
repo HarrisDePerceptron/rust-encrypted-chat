@@ -7,8 +7,11 @@ use crate::routes::index::{say_hi,send_channel};
 use crate::routes::websocket_route::websocket_index;
 
 
+// use crate::routes::auth::{index, login, logout, self};
+// use crate::business::user::routes::{index, login, logout, verify};
 
-use crate::routes::auth::{index, login, logout, self};
+use crate::business::user;
+
 
 pub fn config_app(cfg: &mut web::ServiceConfig){
     cfg
@@ -16,10 +19,10 @@ pub fn config_app(cfg: &mut web::ServiceConfig){
         .service(websocket_index)
         .service(say_hi)
         .service(send_channel)
-        .service(index)
-        .service(login)
-        .service(logout)
-        .service(auth::verify)
-        .service(auth::signup);
+        .service(user::routes::index)
+        .service(user::routes::login)
+        .service(user::routes::logout)
+        .service(user::routes::verify)
+        .service(user::routes::signup);
 
 }
