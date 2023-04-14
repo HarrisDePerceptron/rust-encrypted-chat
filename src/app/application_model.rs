@@ -1,7 +1,9 @@
 use std::ops::{Deref, DerefMut};
-use std::fmt::{Debug};
+use std::fmt::{Debug, Display, Write};
+use actix_web::body::BoxBody;
 use serde::{Serialize, Deserialize,de::DeserializeOwned};
 use actix_web::{HttpResponse,  Responder};
+
 
 #[derive(Debug, Serialize, Deserialize,Clone)]
 pub struct ApplicationModel<T>
@@ -57,7 +59,7 @@ where
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ApplicationRouteResponseOk<T>
+pub struct RouteResponseOk<T>
 {
     pub message: String,
     pub code: usize,
@@ -66,60 +68,57 @@ pub struct ApplicationRouteResponseOk<T>
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ApplicationRouteResponseError
+pub struct RouteResponseError
 {
     pub message: String,
     pub code: usize,
-    pub sub_code: Option<usize>,  
+    pub sub_code: Option<String>,  
 }
 
 
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ApplicationRouteResponse<T> {
-    Ok(ApplicationRouteResponseOk<T>),
-    Error(ApplicationRouteResponseError)
+pub enum RouteResponse<T> {
+    Ok(T),
+    Error(String)
 }
 
 
 
 
-
-
-
-impl Responder for ApplicationRouteResponseError
+impl Responder for RouteResponseError
 {
-    type Body = String;
+    type Body = BoxBody;
 
     fn respond_to(self, req: &actix_web::HttpRequest) -> HttpResponse<Self::Body> {
         let response = serde_json::to_string(&self)
             .unwrap_or_else(|e| e.to_string());
 
-        HttpResponse::BadRequest().body("").set_body(response)
+        HttpResponse::BadRequest().content_type("application/json").body(response)
         
     }
 }
 
 
-impl<T> Responder for ApplicationRouteResponseOk<T>
+impl<T> Responder for RouteResponseOk<T>
 where
     T: Debug + Clone + Serialize
 {
-    type Body = String;
+    type Body = BoxBody;
 
     fn respond_to(self, req: &actix_web::HttpRequest) -> HttpResponse<Self::Body> {
         let response = serde_json::to_string(&self)
             .map_or_else(|e|{
-                let error = ApplicationRouteResponseError{
+                let error = RouteResponseError{
                     code: 400,
                     message: e.to_string(),
-                    sub_code: Some(0)
+                    sub_code: Some("DEFAULT".to_string())
                 };
 
                 error.respond_to(req)
 
             }, |v|{
-                 HttpResponse::Ok().body("").set_body(v)
+                 HttpResponse::Ok().content_type("application/json").body(v)
             });
 
 
@@ -130,18 +129,152 @@ where
 
 
 
-impl<T> Responder for ApplicationRouteResponse<T>
+impl<T> Responder for RouteResponse<T>
 where
     T: Debug + Clone + Serialize
 {
-    type Body = String;
+    type Body = BoxBody;
 
     fn respond_to(self, req: &actix_web::HttpRequest) -> HttpResponse<Self::Body> {
         
         match self {
-            Self::Ok(v) => v.respond_to(req),
-            Self::Error(v) => v.respond_to(req)
+            Self::Ok(v) => {
+                let response = RouteResponseOk {
+                    code: 200,
+                    data: v,
+                    message: "success".to_string()
+                };
+                
+                response.respond_to(req)
+            },
+            Self::Error(v) => {
+                let response = RouteResponseError{
+                    code: 400,
+                    message: "error".to_string(),
+                    sub_code: Some("DEFAULT".to_string())
+                };
+
+                response.respond_to(req)
+            }
         }
         
     }
+}
+
+
+
+impl<T> Display for RouteResponse<T>
+where
+    Self: Debug + Serialize
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std:: fmt::Result {
+        let response = serde_json::to_string(self)
+            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+
+        f.write_str(&response)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RouteResponseErrorDefault(pub String);
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RouteResponseErrorCode(pub String, pub String);
+
+
+impl Display for RouteResponseErrorDefault
+where
+    Self: Debug + Serialize
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std:: fmt::Result {
+
+        let error_response = RouteResponseError {
+            code: 400,
+            sub_code: Some("DEFAULT".to_string()),
+            message: self.0.to_string()
+        };
+
+        let response = serde_json::to_string(&error_response)
+            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+
+        f.write_str(&response)
+    }
+}
+
+
+impl Display for RouteResponseErrorCode
+where
+    Self: Debug + Serialize
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std:: fmt::Result {
+
+        let error_response = RouteResponseError {
+            code: 400,
+            sub_code: Some(self.0.to_string()),
+            message: self.1.to_string()
+        };
+
+        let response = serde_json::to_string(&error_response)
+            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+
+        f.write_str(&response)
+    }
+}
+
+
+impl Display for RouteResponseError
+where
+    Self: Debug + Serialize
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std:: fmt::Result {
+        let response = serde_json::to_string(&self)
+            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+
+        f.write_str(&response)
+    }
+}
+
+
+impl<T> actix_web::ResponseError for RouteResponse<T>
+where 
+    Self: Debug + Serialize
+ {
+    fn status_code(&self) -> actix_web::http::StatusCode {
+        actix_web::http::StatusCode::BAD_REQUEST
+    }
+
+}
+
+
+impl actix_web::ResponseError for RouteResponseErrorDefault
+where 
+    Self: Debug + Serialize
+ {
+    fn status_code(&self) -> actix_web::http::StatusCode {
+        actix_web::http::StatusCode::BAD_REQUEST
+    }
+
+}
+
+
+impl actix_web::ResponseError for RouteResponseErrorCode
+where 
+    Self: Debug + Serialize
+ {
+    fn status_code(&self) -> actix_web::http::StatusCode {
+        actix_web::http::StatusCode::BAD_REQUEST
+    }
+
+}
+
+
+impl actix_web::ResponseError for RouteResponseError
+where 
+    Self: Debug + Serialize
+ {
+    fn status_code(&self) -> actix_web::http::StatusCode {
+        actix_web::http::StatusCode::BAD_REQUEST
+    }
+
 }

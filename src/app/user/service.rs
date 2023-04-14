@@ -36,11 +36,28 @@ pub enum UserServiceError {
     UpdateError(String)
 }
 
+impl std::fmt::Display for UserServiceError
+where
+    Self: std::fmt::Debug + Serialize
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std:: fmt::Result {
+        let response = serde_json::to_string(&self)
+            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+
+        f.write_str(&response)
+    }
+}
+
+
+
 impl UserService {
     pub async fn signup(
         &mut self,
         request: service_model::SignupRequest,
     ) -> Result<ApplicationModel<User>, UserServiceError> {
+
+
+        Err(UserServiceError::SignupError("forced error".to_string()))?;
 
         let hash = auth::hash_password(&request.password)
             .map_err(|e| UserServiceError::SignupError(e))?;

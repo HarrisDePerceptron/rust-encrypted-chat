@@ -20,6 +20,9 @@ use crate::app::application_factory::ServiceFactory;
 use super::routes_model;
 use super::service_model;
 
+use super::super::application_model::{RouteResponse, RouteResponseOk, RouteResponseError, RouteResponseErrorDefault, RouteResponseErrorCode};
+
+
 
 
 #[get("/user")]
@@ -62,10 +65,11 @@ pub struct SignupRequest {
 }
 #[post("/signup")]
 async fn signup(
+    req: HttpRequest,
     param: web::Json<SignupRequest>,
     redis: web::Data<Mutex<RedisProvider>>,
     service_factory: web::Data<ServiceFactory>
-) -> Result<HttpResponse> {
+) -> Result<impl Responder> {
 
     let uf = &service_factory.user;
 
@@ -76,13 +80,19 @@ async fn signup(
         password: param.password.to_string()
     };
 
+    // let result = us.signup(signup_request)
+    //     .await
+    //     .map_err(|e| error::ErrorBadRequest(format!("{:?}", e)))?;
+
+
     let result = us.signup(signup_request)
         .await
-        .map_err(|e| error::ErrorBadRequest(format!("{:?}", e)))?;
+        .map_err(|e| RouteResponseErrorDefault(e.to_string()))?;
 
 
+    // Ok(HttpResponse::Ok().body(format!("signup complete: {:?}", result)))
 
-    Ok(HttpResponse::Ok().body(format!("signup complete: {:?}", result)))
+    Ok(RouteResponse::Ok(result))
 
 }
 
