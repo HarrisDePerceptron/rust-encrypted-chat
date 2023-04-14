@@ -9,3 +9,11 @@ pub struct SignupRequest {
     pub username: String,
     pub password: String,
 }
+
+
+#[derive(Debug, Clone, Serialize,Deserialize)]
+pub struct LoginRequest {
+    pub user_id: String,
+    pub username: String,
+    pub password: String,
+}

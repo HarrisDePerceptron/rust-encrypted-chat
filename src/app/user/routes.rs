@@ -1,5 +1,6 @@
 use actix_identity::{Identity, IdentityMiddleware};
 
+use actix_web::ResponseError;
 use actix_web::{error, get, post, web, HttpMessage, HttpRequest, HttpResponse, Responder, Result};
 
 use redis::AsyncCommands;
@@ -27,18 +28,12 @@ use super::super::application_model::{RouteResponse, RouteResponseOk, RouteRespo
 
 #[get("/user")]
 async fn index(
-    user: Option<Identity>,
     auth: Option<auth_extractor::AuthExtractor>,
-) -> impl Responder {
-    if let Some(auth) = auth {
-        println!("auth user id: {}", auth.user_id);
-    }
-
-    if let Some(user) = user {
-        format!("Welcome! {}", user.id().unwrap())
-    } else {
-        "Welcome Anonymous!".to_owned()
-    }
+) -> Result<impl Responder> {
+    let auth = auth
+        .ok_or(RouteResponseErrorDefault("auith infomation not found".to_string()))?;
+    
+    Ok(RouteResponse::Ok(auth.user_id))
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -80,42 +75,34 @@ async fn signup(
         password: param.password.to_string()
     };
 
-    // let result = us.signup(signup_request)
-    //     .await
-    //     .map_err(|e| error::ErrorBadRequest(format!("{:?}", e)))?;
-
 
     let result = us.signup(signup_request)
         .await
         .map_err(|e| RouteResponseErrorDefault(e.to_string()))?;
 
 
-    // Ok(HttpResponse::Ok().body(format!("signup complete: {:?}", result)))
-
     Ok(RouteResponse::Ok(result))
 
 }
 
 #[post("/login")]
-async fn login(request: HttpRequest) -> impl Responder {
-    let uid = match utils::generate_unique_id() {
-        Err(e) => return HttpResponse::BadRequest().body(e.to_string()),
-        Ok(v) => v,
+async fn login(request: HttpRequest, param: web::Json<routes_model::LoginRequest>,  service_factory: web::Data<ServiceFactory>) -> Result<impl Responder> {
+    
+    let mut user_service = service_factory.user.get();
+    let login_request = service_model::LoginRequest{
+        username: param.username.to_string(),
+        password: param.password.to_string(),
+        user_id: param.user_id.to_string()
     };
 
-    let expiry: u64 = match secrets::TOKEN_EXPIRY_DAYS.to_string().parse() {
-        Err(e) => return HttpResponse::BadRequest().body(format!("{:?}", e)),
-        Ok(v) => v,
-    };
 
-    let token = match auth::generate_token(&uid, &secrets::TOKEN_ISSUER.to_string(), expiry) {
-        Err(e) => return HttpResponse::BadRequest().body(e.to_string()),
-        Ok(v) => v,
-    };
+    let result = user_service.login(login_request)
+        .await
+        .map_err(|e| RouteResponseErrorDefault(e.to_string()) )?;
 
-    Identity::login(&request.extensions(), token.to_owned().into()).unwrap();
 
-    HttpResponse::Ok().body(token)
+    Identity::login(&request.extensions(), result.token.to_owned().into()).unwrap();
+    Ok(RouteResponse::Ok(result))
 }
 
 #[post("/logout")]
