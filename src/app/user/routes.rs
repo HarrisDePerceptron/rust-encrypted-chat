@@ -3,27 +3,16 @@ use actix_identity::{Identity, IdentityMiddleware};
 use actix_web::ResponseError;
 use actix_web::{error, get, post, web, HttpMessage, HttpRequest, HttpResponse, Responder, Result};
 
-use redis::AsyncCommands;
-use std::sync::Mutex;
-
 use crate::auth;
 
 use crate::app::application_factory::FactoryTrait;
-use crate::utils;
-
 use crate::middleware::auth_extractor;
-use crate::secrets;
-
-use serde::{Deserialize, Serialize};
-
-use crate::persistence::redis::RedisProvider;
 use crate::app::application_factory::ServiceFactory;
 use super::routes_model;
 use super::service_model;
 
 use super::super::application_model::{RouteResponse, RouteResponseOk, RouteResponseError, RouteResponseErrorDefault, RouteResponseErrorCode};
-
-
+use super::service_trait::UserServiceTrait;
 
 
 #[get("/user")]
@@ -36,13 +25,9 @@ async fn index(
     Ok(RouteResponse::Ok(auth.user_id))
 }
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct VerifyRequest {
-    pub token: String,
-}
 
 #[post("/verify")]
-async fn verify(param: web::Json<VerifyRequest>) -> impl Responder {
+async fn verify(param: web::Json<routes_model::VerifyRequest>) -> impl Responder {
     let token = &param.token;
 
     let result = match auth::verify_token(token) {
@@ -53,16 +38,11 @@ async fn verify(param: web::Json<VerifyRequest>) -> impl Responder {
     HttpResponse::Ok().body("verified")
 }
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct SignupRequest {
-    pub username: String,
-    pub password: String,
-}
+
 #[post("/signup")]
 async fn signup(
     req: HttpRequest,
-    param: web::Json<SignupRequest>,
-    redis: web::Data<Mutex<RedisProvider>>,
+    param: web::Json<routes_model::SignupRequest>,
     service_factory: web::Data<ServiceFactory>
 ) -> Result<impl Responder> {
 
@@ -74,7 +54,6 @@ async fn signup(
         username: param.username.to_string(),
         password: param.password.to_string()
     };
-
 
     let result = us.signup(signup_request)
         .await

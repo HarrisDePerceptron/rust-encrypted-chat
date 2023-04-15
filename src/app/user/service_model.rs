@@ -31,6 +31,14 @@ pub struct SignupRequest {
 }
 
 
+#[derive(Debug, Clone, Serialize,Deserialize)]
+pub struct SignupResponse {
+    pub token: String,
+    pub user_id: String,
+    pub user_name: String
+}
+
+
 
 #[derive(Debug, Clone, Serialize,Deserialize)]
 pub struct LoginRequest {

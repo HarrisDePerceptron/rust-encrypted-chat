@@ -8,9 +8,11 @@ use serde::Deserialize;
 
 use actix_identity::{Identity};
 use actix::fut::{ready, Ready};
+use crate::app::application_factory::FactoryTrait;
 use crate::middleware::util_middleware;
 use crate::auth;
 
+use crate::app::user::factory::UserFactory;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthExtractor {
@@ -40,6 +42,13 @@ impl FromRequest for AuthExtractor {
         };
 
 
+
+        let user_id = &token_claims.sub;
+        let user_factory = UserFactory::new();
+        let mut user_service = user_factory.get();
+
+
+        
         let data: Self = Self {
             user_id: token_claims.sub
         };

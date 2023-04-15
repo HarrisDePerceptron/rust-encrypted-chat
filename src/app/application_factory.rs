@@ -11,5 +11,4 @@ pub trait FactoryTrait {
 
 pub struct ServiceFactory {
     pub user: UserFactory,
-    pub user2: UserFactory
 }

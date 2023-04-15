@@ -1,11 +1,11 @@
-
-use std::fmt::Debug;
-
 use serde::{Serialize, Deserialize, de::DeserializeOwned};
 use crate::app::application_model::{ApplicationModel, ApplicationModelTrait};
 
 use std::future::Future;
 use async_trait::async_trait;
+
+use std::fmt;
+
 
 
 #[derive(Debug, Clone, Serialize)]
@@ -20,7 +20,7 @@ pub enum ApplicationServiceError{
 #[async_trait]
 pub trait ApplicationServiceTrait <T>
 where 
-    T: Debug + Serialize + Clone + DeserializeOwned + 'static
+    T: fmt::Debug + Serialize + Clone + DeserializeOwned + 'static
  {
     type Model: ApplicationModelTrait<T>;
     
@@ -34,32 +34,17 @@ where
 }
 
 
-// struct ApplicationService{}
 
 
-// impl<'a,T> ApplicationServiceTrait<'a,T> for ApplicationService 
-// where 
-//         T: Debug + Serialize + Clone + Deserialize<'a>
-// {
-//     type Model = ApplicationModel<T>;
+#[async_trait]
+pub trait ServiceTrait  {
 
-//     fn create(&self, data: Self::Model) -> Result<Self::Model, ApplicationServiceError> {
-//         todo!()
-//     }
+    type Error;
 
-//     fn find(&self) -> Result<Vec<Self::Model>, ApplicationServiceError> {
-//         todo!()
-//     }
+    type Model: fmt::Debug + Serialize + Clone  + serde::de::DeserializeOwned + 'static;
 
-//     fn find_by_id(&self, id: &str) -> Result<Self::Model, ApplicationServiceError> {
-//         todo!()
-//     }
-
-//     fn update_by_id(&self,data: Self::Model) -> Result<Self::Model, ApplicationServiceError> {
-//         todo!()
-//     }
-
-//     fn delete(&self, id: &str) -> Result<String, ApplicationServiceError> {
-//         todo!()
-//     }
-// }
+    type Persistence: self::ApplicationServiceTrait<Self::Model, Model = ApplicationModel<Self::Model>>; 
+    
+    
+    fn get_persistence_service(&mut self) -> &mut Self::Persistence;
+}

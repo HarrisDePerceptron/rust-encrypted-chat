@@ -55,8 +55,6 @@ async fn main() -> std::io::Result<()> {
 
     let mut sf = ServiceFactory {
         user: user_factory,
-        user2: user_factory2
-
     };
 
 
