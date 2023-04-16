@@ -15,6 +15,8 @@ use super::super::application_model::{RouteResponse, RouteResponseOk, RouteRespo
 use super::service_trait::UserServiceTrait;
 
 
+
+
 #[get("/user")]
 async fn index(
     auth: Option<auth_extractor::AuthExtractor>,
@@ -22,7 +24,7 @@ async fn index(
     let auth = auth
         .ok_or(RouteResponseErrorDefault("auith infomation not found".to_string()))?;
     
-    Ok(RouteResponse::Ok(auth.user_id))
+    Ok(RouteResponse::Ok(auth))
 }
 
 

@@ -47,7 +47,6 @@ pub fn parse_header_token(headers: &HeaderMap) -> Result<String, String> {
     };
 
     let bearer = authorization.to_owned();
-    println!("auth header: {}", bearer.to_str().unwrap());
 
     let mut token = String::new();
 
