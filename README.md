@@ -8,13 +8,13 @@
     * [x] Bearer Token
     * [x] Cookie Token
     * [x] Auth Extractors
-    * [] Exposing authenticated user in websockets
+    * [x] Exposing authenticated user in websockets
     * [x] JWT verify only(expiry)
 - [x] DOT ENV File
 - [ ] Enable TLS/WSS
 - [x] Message UUIDs time based
 - [ ] Database persistence
-    * Redis
+    * [x] Redis
     * Mongo
 - [ ] Scaling websockets (Stickty session?)
 - [ ] Chat Implementation 
