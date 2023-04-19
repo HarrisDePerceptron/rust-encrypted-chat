@@ -1,11 +1,14 @@
 
-use actix_web::{web, get, HttpResponse, Responder};
+use actix_web::{web, get, HttpResponse, Responder, Result};
 
 use actix::{Addr};
 use crate::server::messages::{TextMessageAll, SendChannel};
 use crate::server::WebSocketServer;
 
 
+use crate::app::application_model::{RouteResponseOk, RouteResponse, RouteResponseError, RouteResponseErrorDefault};
+
+use crate::server::messages;
 
 
 
@@ -39,5 +42,17 @@ pub async fn send_channel(path: web::Path<(String,)>,state: web::Data<Addr<WebSo
     }
 
     HttpResponse::Ok().body("sendding hi to conencted sockets")
+}
+
+#[get("/channel")]
+pub async fn list_channels(state: web::Data<Addr<WebSocketServer>>) -> Result<impl Responder> {
+    let channel_list =  state.send(messages::ListChannel{})
+        .await
+        .map_err(|e| RouteResponseErrorDefault(e.to_string()))?;
+
+    return Ok(RouteResponse::Ok(channel_list));
+
+
+    
 }
 

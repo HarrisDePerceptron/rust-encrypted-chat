@@ -5,6 +5,7 @@ use serde::Serialize;
 use crate::{server::UserSession, session::TextMessage};
 
 use crate::server::server_response::ServerResponse;
+use crate::utils;
 
 
 pub struct Channel {
@@ -22,9 +23,13 @@ pub enum ChannelError{
 
 
 impl Channel {
-    pub fn new(id: &str, name: &str) -> Self{
+    pub fn new(name: &str) -> Self{
+        let id = utils::generate_unique_id().expect("Unable to generate uuid for channel");
+
+        let channel_id = format!("channel:{}", id);
+
         Self { 
-            id: id.to_string() , 
+            id: channel_id , 
             name: name.to_string(), 
             sessions: vec![] 
         }

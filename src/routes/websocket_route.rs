@@ -20,15 +20,12 @@ pub async fn websocket_index(
     stream: web::Payload,
     state: web::Data<Addr<WebSocketServer>>,
     cookie: Option<Identity>,
-    auth: auth_extractor::AuthExtractor
+    auth: auth_extractor::UserAuthSession
 ) -> Result<HttpResponse, Error> {
     let headers = req.headers();
 
-    let user_id = auth.user_id;
 
-    println!("Got token: {:?}", user_id);
-
-    let resp = ws::start(WebSocketSession::new(state.get_ref().clone()), &req, stream);
+    let resp = ws::start(WebSocketSession::new(state.get_ref().clone(), auth), &req, stream);
 
     println!("{:?}", resp);
     resp

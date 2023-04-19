@@ -1,7 +1,11 @@
-use actix::{Message, Addr};
+use actix::{Message, Addr, MessageResult};
 
 use crate::session::{WebSocketSession};
 use crate::server::UserSession;
+use crate::middleware::auth_extractor::UserAuthSession;
+
+
+use super::model;
 
 
 
@@ -89,6 +93,14 @@ impl Message for SendChannel {
 }
 
 
+pub struct ListChannel {
+    // pub channel_name: String
+}
+
+
+impl Message for ListChannel {
+    type Result =  Vec<model::ChannelListResponse>;
+}
 
 #[derive(Message)]
 #[rtype(result="()")]

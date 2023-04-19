@@ -7,14 +7,12 @@ pub mod  application_utils;
 
 
 
-
-use actix::Actor;
 use actix_web::{web, App};
 
-use crate::server::WebSocketServer;
 
 use crate::routes::index::{say_hi,send_channel};
 use crate::routes::websocket_route::websocket_index;
+use crate::routes::index;
 
 
 // use crate::routes::auth::{index, login, logout, self};
@@ -27,6 +25,7 @@ pub fn config_app(cfg: &mut web::ServiceConfig){
         // .app_data(state.clone())
         .service(websocket_index)
         .service(say_hi)
+        .service(index::list_channels)
         .service(send_channel)
         .service(user::routes::index)
         .service(user::routes::login)

@@ -19,7 +19,7 @@ use super::service_trait::UserServiceTrait;
 
 #[get("/user")]
 async fn index(
-    auth: Option<auth_extractor::AuthExtractor>,
+    auth: Option<auth_extractor::UserAuthSession>,
 ) -> Result<impl Responder> {
     let auth = auth
         .ok_or(RouteResponseErrorDefault("auith infomation not found".to_string()))?;

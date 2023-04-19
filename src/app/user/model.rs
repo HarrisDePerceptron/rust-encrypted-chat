@@ -8,13 +8,3 @@ pub struct User {
     pub password: String,
 }
 
-
-
-// #[derive(Debug, Clone)]
-// pub struct SignupRequest {
-//     pub username: String,
-//     pub password: String,
-// }
-
-
-

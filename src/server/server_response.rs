@@ -3,6 +3,9 @@
 use std::fmt::Debug;
 use serde::{Serialize};
 
+use super::model;
+
+
 
 #[derive(Debug, Serialize, Clone)]
 pub enum  ServerResponse {
@@ -11,7 +14,8 @@ pub enum  ServerResponse {
     SendChannel(ResponseBase<SendChannelResponse>),
     CONNECT(ResponseBase<ConnectResponse>),
     DISCONNECT(ResponseBase<DisconnectResponse>),
-    ERROR(ResponseBase<ResponseError>)
+    ERROR(ResponseBase<ResponseError>),
+    ListChannels(ResponseBase<Vec<model::ChannelListResponse>>)
 }
 
 #[derive(Debug, Serialize,Clone)]

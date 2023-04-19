@@ -18,12 +18,12 @@ use std::thread::JoinHandle;
 use std::pin::Pin;
 
 #[derive(Debug, Deserialize, Clone, Serialize)]
-pub struct AuthExtractor {
+pub struct UserAuthSession {
     pub user_id: String,
     pub username: String,
 }
 
-impl FromRequest for AuthExtractor {
+impl FromRequest for UserAuthSession {
     type Error = Error;
     // type Future = Ready<Result<Self, Self::Error>>;
     type Future = Pin<Box<dyn Future<Output = Result<Self, Self::Error>>>>;

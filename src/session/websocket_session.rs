@@ -13,6 +13,8 @@ use std::time::{Duration, Instant};
 use uuid::Uuid;
 
 use crate::utils;
+use crate::middleware::auth_extractor::UserAuthSession;
+
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 
@@ -27,6 +29,7 @@ pub struct WebSocketSession {
     pub server: Addr<WebSocketServer>,
     pub hb: Instant,
     pub sessions: HashMap<String, UserSession>,
+    pub user_auth_session: UserAuthSession
 }
 
 impl WebSocketSession {
@@ -75,12 +78,13 @@ impl WebSocketSession {
         });
     }
 
-    pub fn new(srv: Addr<WebSocketServer>) -> Self {
+    pub fn new(srv: Addr<WebSocketServer>, user_auth_session: UserAuthSession) -> Self {
         Self {
             id: 0,
             server: srv,
             hb: Instant::now(),
             sessions: HashMap::new(),
+            user_auth_session: user_auth_session
         }
     }
 
@@ -116,6 +120,7 @@ impl Actor for WebSocketSession {
         let user_session = UserSession {
             session: addr,
             session_id: session_id.clone(),
+            auth_session: self.user_auth_session.clone()
         };
 
         self.sessions.insert(session_id, user_session.clone());

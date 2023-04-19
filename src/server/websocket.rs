@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use actix::{Actor, Addr, AsyncContext, Context, Handler, Message, Recipient};
-use actix_web::cookie::time::util;
-
+use actix::{Actor, Addr, Context, Handler, Message, Recipient, MessageResult, ResponseFuture};
 use crate::server::messages::{
     Connect, CountAll, Disconnect, Join, SendChannel, ServerMessage, TextMessageAll,
 };
@@ -19,12 +17,16 @@ use crate::server::channel;
 
 
 use crate::utils;
+use super::messages;
+use super::model;
+
 
 pub struct WebSocketServer {
     pub index: usize,
     pub sessions: HashMap<String, UserSession>,
     pub channels: HashMap<String, Channel>,
     pub ch_id: usize,
+    
 }
 
 impl Actor for WebSocketServer {
@@ -44,7 +46,7 @@ impl WebSocketServer {
 
     pub fn new() -> Self {
         let mut channels = HashMap::new();
-        channels.insert("default".to_string(), Channel::new("0", "default"));
+        channels.insert("default".to_string(), Channel::new("default"));
 
         Self {
             index: 0,
@@ -74,7 +76,7 @@ impl WebSocketServer {
                 _ => (),
             }
         } else {
-            let mut ch_default = Channel::new(&self.ch_id.to_string(), name);
+            let mut ch_default = Channel::new(name);
             match ch_default.add_session(user_session) {
                 Err(e) => return Err(e),
                 _ => (),
@@ -180,6 +182,40 @@ impl WebSocketServer {
 
         Ok(())
     }
+    
+    pub fn list_channels(&self) -> Vec<model::ChannelListResponse>{
+        let mut  chs: Vec<model::ChannelListResponse> = Vec::new();
+        for (key, ch) in &self.channels {
+            let channel_name= ch.name.to_owned();
+            let channel_id = ch.id.to_owned();
+
+            let mut channel_users: Vec<model::ChannelUser> = Vec::new();
+
+            for sess in &ch.sessions {
+                let channel_user = model::ChannelUser {
+                    user_id: sess.auth_session.user_id.to_owned(),
+                    user_name: sess.auth_session.username.to_owned()
+                };
+
+                channel_users.push(channel_user);
+
+            }
+
+            let channel_list_respose = model::ChannelListResponse {
+                channel_id: channel_id,
+                channel_name: channel_name,
+                users: channel_users
+            };
+
+
+            chs.push(channel_list_respose);
+
+        }
+
+        return chs;
+        
+    }
+
 }
 
 impl Handler<ServerMessage<Connect>> for WebSocketServer {
@@ -304,24 +340,40 @@ impl Handler<ServerMessage<SendChannel>> for WebSocketServer {
     }
 }
 
-// impl Handler<ServerMessage<ErrorMessage>> for WebSocketServer {
-//     type Result=();
+impl Handler<messages::ListChannel> for WebSocketServer {
+    type Result =  ResponseFuture<Vec<model::ChannelListResponse>>;
 
-//     fn handle(&mut self, msg: ServerMessage<ErrorMessage>, ctx: &mut Self::Context) -> Self::Result {
-//         println!("Sending to channel...");
+    fn handle(&mut self, msg: messages::ListChannel, ctx: &mut Self::Context) -> Self::Result {
+        let response = self.list_channels();
 
-//         let response = server_response::ServerResponse::ERROR(
-//             server_response::ResponseBase{
-//                 message: "error".to_string(),
-//                 message_id: msg.message_id.to_owned(),
-//                 data: server_response::ResponseError{
-//                     error_code: msg.error_code.to_owned(),
-//                     error_message: msg.error_message.to_owned()
-//                 }
-//             }
-//         );
+        Box::pin (
+            async move {
+                return response;
+            }
+        )
+    }
+}
 
-//         self.send_to_session(&msg.session,"error", Some(response));
 
-//     }
-// }
+impl Handler<ServerMessage<messages::ListChannel>> for WebSocketServer {
+    type Result =  ResponseFuture<Vec<model::ChannelListResponse>>;
+
+    fn handle(&mut self, msg: ServerMessage<messages::ListChannel>, ctx: &mut Self::Context) -> Self::Result {
+        let response = self.list_channels();
+
+        let data = ServerResponse::ListChannels(ResponseBase {
+            message_id: msg.message_id,
+            message: "Channel listing".to_owned(),
+            data: response.clone(),
+        });
+
+        self.send_to_session(&msg.session, "All channel list", Some(data));
+
+
+        Box::pin (
+            async move {
+                return response;
+            }
+        )
+    }
+}

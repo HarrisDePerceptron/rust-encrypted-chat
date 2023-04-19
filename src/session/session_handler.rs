@@ -1,5 +1,6 @@
 use crate::server::messages::{CountAll, Join, SendChannel, ServerMessage};
-use crate::server::UserSession;
+use crate::server;
+
 use crate::session::{ToChannelRequest, WebSocketSession};
 
 use actix::{Actor, ActorContext, AsyncContext, Handler, StreamHandler};
@@ -71,6 +72,15 @@ impl CommandHandler for WebSocketSession {
                     session: user_session.to_owned(),
                 });
             }
+
+            CommandRequest::ListChannels(c) => {
+                server_address.do_send(ServerMessage {
+                    message: server::messages::ListChannel{},
+                    message_id: message_id,
+                    session: user_session.to_owned(),
+                });
+
+            },
             _ => {
                 let msg = "Command  not implmented";
                 self.handle_error_default(msg, ctx);

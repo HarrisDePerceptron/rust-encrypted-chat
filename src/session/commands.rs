@@ -13,6 +13,12 @@ impl ErrorCode {
 }
 
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct CommandRequestError {
+    pub message: String,
+    pub code: i32
+}
+
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum CommandRequest {
@@ -21,16 +27,13 @@ pub enum CommandRequest {
     BROADCAST(BroadcastRequest),
     COUNT(CountRequest),
     ToChannel(ToChannelRequest),
+    ListChannels(ListChannelRequest)
 }
 
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CommandRequestError {
-    pub message: String,
-    pub code: i32
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ListChannelRequest {
 }
-
-
 
 
 #[derive(Serialize, Deserialize, Debug)]
