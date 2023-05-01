@@ -92,7 +92,7 @@ impl service_trait::UserServiceTrait for UserService {
     ) -> Result<Vec<ApplicationModel<User>>, service_model::UserServiceError> {
         let result: Vec<ApplicationModel<User>> = self
             .redis_service
-            .find(count)
+            .find(format!("user:*"),count)
             .await
             .map_err(|e| service_model::UserServiceError::GetError(format!("{:?}", e)))?;
 

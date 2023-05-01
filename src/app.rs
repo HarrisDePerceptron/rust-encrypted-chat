@@ -4,6 +4,7 @@ pub mod application_service;
 pub mod service_redis;
 pub mod application_factory;
 pub mod  application_utils;
+pub mod websocket;
 
 
 

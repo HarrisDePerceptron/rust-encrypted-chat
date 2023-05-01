@@ -25,7 +25,7 @@ where
     type Model: ApplicationModelTrait<T>;
     
     async fn create(&mut self, data: Self::Model) -> Result<Self::Model, ApplicationServiceError>;
-    async fn find(&mut self, count: usize) ->  Result<Vec<Self::Model>, ApplicationServiceError>;
+    async fn find(&mut self, query: String, count: usize) ->  Result<Vec<Self::Model>, ApplicationServiceError>;
     async fn find_by_id(&mut self, id: &str) -> Result<Self::Model, ApplicationServiceError>;
 
     async fn update_by_id(&mut self, data: Self::Model) ->  Result<Self::Model, ApplicationServiceError>;

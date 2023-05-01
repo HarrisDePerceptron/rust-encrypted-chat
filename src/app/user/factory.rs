@@ -4,7 +4,7 @@
 use super::service::UserService;
 use crate::persistence::redis::RedisProvider;
 
-use crate::app::service_redis::{RedisApplicationService, RedisFactory};
+use crate::app::service_redis::{DataStructure, RedisFactory};
 use crate::app::application_factory::FactoryTrait;
 
 
@@ -18,7 +18,7 @@ pub struct UserFactory
 impl UserFactory
 {
     pub fn new() -> Self{
-        let  redis_factory = RedisFactory::new("user");
+        let  redis_factory = RedisFactory::new("user", DataStructure::KV);
         
         Self {redis_factory: redis_factory}
     }

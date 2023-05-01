@@ -20,6 +20,7 @@ use encrypted_chat::persistence;
 use std::sync::Mutex;
 
 use encrypted_chat::app::user::factory::{UserFactory};
+use encrypted_chat::app::websocket::factory::{WebsocketServiceFactory};
 use encrypted_chat::app::application_factory::{ServiceFactory};
 
 
@@ -38,9 +39,11 @@ async fn main() -> std::io::Result<()> {
     let server_addr = server.start();
 
     let user_factory = UserFactory::new();
+    let websocket_factory = WebsocketServiceFactory::new();
 
     let sf = ServiceFactory {
         user: user_factory,
+        websocket: websocket_factory
     };
 
 
