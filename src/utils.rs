@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
+use std::time::{SystemTime, SystemTimeError, UNIX_EPOCH};
 
 pub fn generate_unique_id() -> Result<String, SystemTimeError> {
     let now = SystemTime::now();

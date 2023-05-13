@@ -2,7 +2,7 @@
 
 
 ## TODO 
-- [ ] Websocket auth (token  cookies)
+- [x] Websocket auth (token  cookies)
     * [x] Secure
     * CSRF?
     * [x] Bearer Token

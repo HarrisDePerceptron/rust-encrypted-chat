@@ -1,49 +1,120 @@
 
-use crate::app::service_redis::RedisApplicationService;
+use crate::{app::{redis::service::RedisApplicationService, application_service::ServiceTrait, application_model::ApplicationModel}, persistence};
 
-use super::service_model::WebsocketServiceError;
-use crate::app::application_service::{ApplicationServiceTrait};
 use async_trait::async_trait;
-
-
-use super::model;
-use super::service_model;
-use crate::app::application_model::ApplicationModel;
 use crate::app::application_service;
-use crate::auth;
-use crate::secrets;
-use super::service_trait;
+use crate::app::redis::model::{DataStructure};
+use super::service_model::{WebsocketServiceError};
+use crate::persistence::redis::RedisProvider;
+
+
+use serde_json;
+use serde::{Serialize, Deserialize};
+
+use redis::AsyncCommands;
+
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChannelData {
+    id: String,
+    name: String,
+}
+
+
+
+#[async_trait]
+pub trait WebsocketServiceTrait
+{
+    async fn store(
+        &mut self,
+        channel: ChannelData
+    ) -> Result<(), WebsocketServiceError>;
+
+    async fn load(
+        &mut self,
+    ) -> Result<Vec<ChannelData>, WebsocketServiceError>;
+
+}
 
 pub struct WebsocketService {
-    redis_service: RedisApplicationService,
+    redis_provider: RedisProvider,
+    max_channels: usize
+
 }
 
 impl WebsocketService {
-    pub fn new(redis_service: RedisApplicationService) -> Self {
+    pub fn new() -> Self {
+
+        let provider = RedisProvider::new();
+        
         Self {
-            redis_service: redis_service,
+            redis_provider: provider,
+            max_channels: 10000
         }
     }
 }
 
 
-impl application_service::ServiceTrait for WebsocketService {
-    type Model = model::Websocket;
-    type Persistence = RedisApplicationService;
-    type Error =  WebsocketServiceError;
-
-    fn get_persistence_service(&mut self) -> &mut Self::Persistence {
-        &mut self.redis_service
-    }
-}
 
 
 #[async_trait]
-impl service_trait::WebsocketServiceTrait for WebsocketService {
+impl WebsocketServiceTrait for WebsocketService {
     async fn store(
         &mut self,
-    ) -> Result<(), Self::Error> {
+        channel: ChannelData
+    ) -> Result<(),WebsocketServiceError> {
+        
+        let conn = self.redis_provider.get_connection()
+            .await
+            .map_err(|e| WebsocketServiceError::StoreError(format!("{}",e.reason)))?;
+
+
+        let data_str = serde_json::to_string(&channel)
+            .map_err(|e| WebsocketServiceError::SignupError(e.to_string()))?;
+
+        conn.sadd("channels",data_str)
+            .await
+            .map_err(|e| WebsocketServiceError::StoreError(e.to_string()))?;        
         
         Ok(())
+    }
+
+
+    async fn load(
+        &mut self,
+    ) -> Result<Vec<ChannelData>, WebsocketServiceError> {
+
+        let conn = self.redis_provider.get_connection()
+            .await
+            .map_err(|e| WebsocketServiceError::StoreError(format!("{}",e.reason)))?;
+
+        let mut res = conn.sscan_match("channels", "*")
+            .await
+            .map_err(|e| WebsocketServiceError::LoadError(e.to_string()) )?;
+
+        let  mut channels: Vec<ChannelData> = Vec::new();
+
+        for i in 0..self.max_channels {
+            let item: Option<String>= res.next_item()
+                .await;
+
+            let v = match item {
+                Some(v) => v,
+                None => break
+            };
+            
+            let data: ChannelData = match serde_json::from_str(&v) {
+                Err(e) => continue,
+                Ok(v) => v
+            };
+            
+            channels.push(data);
+            
+        }
+
+
+        Ok(channels)
+
     }
 }

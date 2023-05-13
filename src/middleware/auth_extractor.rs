@@ -1,19 +1,19 @@
-use actix_web::error::{ErrorUnauthorized, InternalError};
-use actix_web::http::header::HeaderMap;
-use actix_web::{dev, rt, web, Error, FromRequest, HttpMessage, HttpRequest};
+use actix_web::error::{ErrorUnauthorized};
+
+use actix_web::{dev, Error, FromRequest, HttpMessage, HttpRequest};
 use futures_util::Future;
 use serde::{Serialize,Deserialize};
 
 use crate::app::application_factory::FactoryTrait;
-use crate::auth;
+
 use crate::middleware::util_middleware;
-use actix::fut::{ready, Ready};
+
 use actix_identity::Identity;
 
 use crate::app::user::factory::UserFactory;
 use crate::app::user::service_trait::UserServiceTrait;
 
-use std::thread::JoinHandle;
+
 
 use std::pin::Pin;
 
@@ -30,7 +30,7 @@ impl FromRequest for UserAuthSession {
 
     fn from_request(req: &HttpRequest, _: &mut dev::Payload) -> Self::Future {
         let identity = match Identity::extract(req).into_inner() {
-            Err(e) => None,
+            Err(_e) => None,
             Ok(v) => Some(v),
         };
         let headers = req.headers();

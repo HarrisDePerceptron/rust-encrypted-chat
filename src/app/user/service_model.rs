@@ -1,6 +1,6 @@
 use std::fmt::{Debug};
 use serde::{Serialize, Deserialize};
-use crate::app::application_model::ApplicationModel;
+
 
 
 
@@ -18,7 +18,7 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std:: fmt::Result {
         let response = serde_json::to_string(&self)
-            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+            .map_err(|_e| std::fmt::Error::from(std::fmt::Error))?;
 
         f.write_str(&response)
     }

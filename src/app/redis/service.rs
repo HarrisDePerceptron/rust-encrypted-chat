@@ -1,28 +1,23 @@
-use std::borrow::BorrowMut;
+
 use std::fmt::Debug;
 
 use crate::app::application_model::ApplicationModel;
 use crate::app::application_service::{ApplicationServiceError, ApplicationServiceTrait};
-use actix::fut::future::result;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json;
 
 use crate::persistence;
 use async_trait::async_trait;
 
-use crate::persistence::redis::{RedisProvider, RedisProviderError};
+use crate::persistence::redis::{RedisProvider};
 use redis::AsyncCommands;
 use redis::Commands;
 
 use crate::utils;
+use super::model::DataStructure;
 
-use crate::app::application_factory::FactoryTrait;
 
-#[derive(Debug, Clone)]
-pub enum DataStructure {
-    KV,
-    UnorderedSet,
-}
 
 pub struct RedisApplicationService {
     provider: RedisProvider,
@@ -37,6 +32,10 @@ impl RedisApplicationService {
             name: name.to_string(),
             datastructure: datastructure,
         }
+    }
+
+    pub fn get_datastructure(&self) -> DataStructure {
+        self.datastructure.clone()
     }
 
     async fn get_keys(
@@ -89,7 +88,7 @@ impl RedisApplicationService {
 
         for k in &keys {
             let item: String = match conn.get(k).await {
-                Err(e) => continue,
+                Err(_e) => continue,
                 Ok(v) => v,
             };
 
@@ -237,7 +236,7 @@ impl RedisApplicationService {
         let mut values: Vec<String> = Vec::new();
 
         for k in &results {
-            let v: String = conn
+            let _v: String = conn
                 .get(k)
                 .await
                 .map_err(|e| ApplicationServiceError::FindAllError(e.to_string()))?;
@@ -329,12 +328,6 @@ where
         query: String,
         count: usize,
     ) -> Result<Vec<Self::Model>, ApplicationServiceError> {
-        // let mut pattern = format!("{}:*", self.name);
-
-        // if let Some(query) = query {
-        //     pattern = query
-        // }
-
         let mut data: Vec<Self::Model> = Vec::new();
 
         let values = self.find_(&query, count).await?;
@@ -374,62 +367,15 @@ where
         let data_str = serde_json::to_string(&model)
             .map_err(|e| ApplicationServiceError::UpdateError(e.to_string()))?;
 
-        // let conn = self
-        //     .provider
-        //     .get_connection()
-        //     .await
-        //     .map_err(|e| ApplicationServiceError::UpdateError(e.reason))?;
-
-        // conn.set(id, data_str)
-        //     .await
-        //     .map_err(|e| ApplicationServiceError::UpdateError(e.to_string()))?;
-
         self.create_(&id, &data_str).await?;
 
         Ok(model)
     }
 
     async fn delete(&mut self, id: &str) -> Result<String, ApplicationServiceError> {
-        // let conn = self
-        //     .provider
-        //     .get_connection()
-        //     .await
-        //     .map_err(|e| ApplicationServiceError::UpdateError(e.reason))?;
-
-        // conn.del(id)
-        //     .await
-        //     .map_err(|e| ApplicationServiceError::UpdateError(e.to_string()))?;
 
         self.delete_(id).await?;
 
         Ok(id.to_string())
-    }
-}
-
-pub struct RedisFactory {
-    schema_name: String,
-    datastructure: DataStructure,
-}
-
-impl RedisFactory {
-    pub fn new(schema_name: &str, datastructure: DataStructure) -> Self {
-        Self {
-            schema_name: schema_name.to_string(),
-            datastructure: datastructure,
-        }
-    }
-}
-
-impl FactoryTrait for RedisFactory {
-    type Service = RedisApplicationService;
-
-    fn get(&self) -> Self::Service {
-        let redis_provider = persistence::redis::RedisProvider::new();
-        let service = Self::Service::new(
-            &self.schema_name,
-            redis_provider,
-            self.datastructure.clone(),
-        );
-        service
     }
 }

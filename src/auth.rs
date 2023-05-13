@@ -1,14 +1,14 @@
 
-use actix_web::body::MessageBody;
+
 use serde::{Serialize, Deserialize};
 use std::fmt::{Debug};
 
-use std::time::{SystemTime, UNIX_EPOCH, Instant, Duration, self};
+
 use crate::utils;
 use crate::secrets;
 
 
-use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey};
+use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey};
 
 
 use argon2::{
@@ -89,7 +89,7 @@ pub fn verify_token(token: &str) -> Result<bool, String> {
 
     let dummy_key = DecodingKey::from_secret(&[]);
 
-    let data = match decode::<JWTClaims>(token, &dummy_key, &validation){
+    let _data = match decode::<JWTClaims>(token, &dummy_key, &validation){
         Ok(v) => v,
         Err(e)=> return Err(e.to_string())
     };

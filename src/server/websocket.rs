@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
-use actix::{Actor, Addr, Context, Handler, Message, Recipient, MessageResult, ResponseFuture};
+use actix::{Actor, Addr, Context, Handler, Message, Recipient, ResponseFuture};
 use crate::server::messages::{
     Connect, CountAll, Disconnect, Join, SendChannel, ServerMessage, TextMessageAll,
 };
 use crate::server::{Channel, UserSession};
-use crate::session::{ErrorCode, TextMessage, WebSocketSession};
+use crate::session::{TextMessage, WebSocketSession};
 
 use super::messages::ErrorMessage;
 
 use crate::server::server_response;
 use super::server_response::{
-    ConnectResponse, CountResponse, ResponseBase, SendChannelResponse, ServerResponse, ResponseError
+    ConnectResponse, CountResponse, ResponseBase, ServerResponse
 };
 use crate::server::channel;
 
@@ -35,7 +35,7 @@ impl Actor for WebSocketServer {
 
 impl WebSocketServer {
     pub fn notify_all(&self, message: &str) {
-        for (session_id, session) in &self.sessions {
+        for (_session_id, session) in &self.sessions {
             let res: Recipient<TextMessage> = session.session.clone().recipient();
             res.do_send(TextMessage {
                 message: message.to_owned(),
@@ -185,7 +185,7 @@ impl WebSocketServer {
     
     pub fn list_channels(&self) -> Vec<model::ChannelListResponse>{
         let mut  chs: Vec<model::ChannelListResponse> = Vec::new();
-        for (key, ch) in &self.channels {
+        for (_key, ch) in &self.channels {
             let channel_name= ch.name.to_owned();
             let channel_id = ch.id.to_owned();
 
@@ -221,7 +221,7 @@ impl WebSocketServer {
 impl Handler<ServerMessage<Connect>> for WebSocketServer {
     type Result = usize;
 
-    fn handle(&mut self, msg: ServerMessage<Connect>, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerMessage<Connect>, _ctx: &mut Self::Context) -> Self::Result {
         println!("Connecting new websocket session...");
 
         self.register_session(&msg.0);
@@ -245,7 +245,7 @@ impl Handler<ServerMessage<Connect>> for WebSocketServer {
 impl Handler<TextMessageAll> for WebSocketServer {
     type Result = ();
 
-    fn handle(&mut self, msg: TextMessageAll, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: TextMessageAll, _ctx: &mut Self::Context) -> Self::Result {
         self.notify_all(&msg.message);
     }
 }
@@ -253,7 +253,7 @@ impl Handler<TextMessageAll> for WebSocketServer {
 impl Handler<ServerMessage<CountAll>> for WebSocketServer {
     type Result = <ServerMessage<CountAll> as Message>::Result;
 
-    fn handle(&mut self, msg: ServerMessage<CountAll>, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerMessage<CountAll>, _ctx: &mut Self::Context) -> Self::Result {
         let count: usize = self.sessions.keys().len();
         let data = ServerResponse::COUNT(ResponseBase {
             message_id: msg.message_id,
@@ -268,7 +268,7 @@ impl Handler<ServerMessage<CountAll>> for WebSocketServer {
 impl Handler<ServerMessage<Disconnect>> for WebSocketServer {
     type Result = <ServerMessage<Disconnect> as Message>::Result;
 
-    fn handle(&mut self, msg: ServerMessage<Disconnect>, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerMessage<Disconnect>, _ctx: &mut Self::Context) -> Self::Result {
         println!(
             "Chatserver: disconnecting with actor id: {}",
             msg.session.session_id
@@ -281,7 +281,7 @@ impl Handler<ServerMessage<Disconnect>> for WebSocketServer {
 impl Handler<ServerMessage<Join>> for WebSocketServer {
     type Result = <ServerMessage<Join> as Message>::Result;
 
-    fn handle(&mut self, msg: ServerMessage<Join>, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerMessage<Join>, _ctx: &mut Self::Context) -> Self::Result {
         println!("Joining channel...");
 
         let sess = self.get_session(&msg.session.session_id);
@@ -317,7 +317,7 @@ impl Handler<ServerMessage<Join>> for WebSocketServer {
 impl Handler<SendChannel> for WebSocketServer {
     type Result = ();
 
-    fn handle(&mut self, msg: SendChannel, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: SendChannel, _ctx: &mut Self::Context) -> Self::Result {
         println!("Sending to channel...");
 
         self.send_to_channel(&msg.channel_name, &msg.msg, None);
@@ -327,7 +327,7 @@ impl Handler<SendChannel> for WebSocketServer {
 impl Handler<ServerMessage<SendChannel>> for WebSocketServer {
     type Result = ();
 
-    fn handle(&mut self, msg: ServerMessage<SendChannel>, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerMessage<SendChannel>, _ctx: &mut Self::Context) -> Self::Result {
         println!("Sending to channel...");
 
         let response_message = format!("Sent to channel {}", msg.channel_name);
@@ -343,7 +343,7 @@ impl Handler<ServerMessage<SendChannel>> for WebSocketServer {
 impl Handler<messages::ListChannel> for WebSocketServer {
     type Result =  ResponseFuture<Vec<model::ChannelListResponse>>;
 
-    fn handle(&mut self, msg: messages::ListChannel, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: messages::ListChannel, _ctx: &mut Self::Context) -> Self::Result {
         let response = self.list_channels();
 
         Box::pin (
@@ -358,7 +358,7 @@ impl Handler<messages::ListChannel> for WebSocketServer {
 impl Handler<ServerMessage<messages::ListChannel>> for WebSocketServer {
     type Result =  ResponseFuture<Vec<model::ChannelListResponse>>;
 
-    fn handle(&mut self, msg: ServerMessage<messages::ListChannel>, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: ServerMessage<messages::ListChannel>, _ctx: &mut Self::Context) -> Self::Result {
         let response = self.list_channels();
 
         let data = ServerResponse::ListChannels(ResponseBase {

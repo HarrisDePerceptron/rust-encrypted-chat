@@ -1,16 +1,16 @@
 use crate::server::messages::{CountAll, Join, SendChannel, ServerMessage};
 use crate::server;
 
-use crate::session::{ToChannelRequest, WebSocketSession};
+use crate::session::{WebSocketSession};
 
-use actix::{Actor, ActorContext, AsyncContext, Handler, StreamHandler};
+use actix::{ActorContext, AsyncContext, Handler, StreamHandler};
 use actix_web_actors::ws;
-use serde::Serialize;
+
 use std::time::Instant;
 
 use crate::session::command_parser::JSONCommandParser;
 use crate::session::commands::{CommandRequest, CommandRequestError, ErrorCode};
-use actix_web_actors::ws::Message;
+
 
 use crate::session::TextMessage;
 
@@ -35,7 +35,7 @@ impl CommandHandler for WebSocketSession {
 
         let session_id = user_session.session_id.to_owned();
         let message_id = match utils::generate_unique_id() {
-            Err(e) => {
+            Err(_e) => {
                 self.handle_error_default("Failed to generate uuid", ctx);
                 return;
             }
@@ -73,7 +73,7 @@ impl CommandHandler for WebSocketSession {
                 });
             }
 
-            CommandRequest::ListChannels(c) => {
+            CommandRequest::ListChannels(_c) => {
                 server_address.do_send(ServerMessage {
                     message: server::messages::ListChannel{},
                     message_id: message_id,
@@ -92,7 +92,7 @@ impl CommandHandler for WebSocketSession {
 
     fn handle_error(&self, command: &CommandRequestError, ctx: &mut SessionContext<Self>) {
         let serialize = match serde_json::to_string(&command) {
-            Err(e) => {
+            Err(_e) => {
                 println!("unbale to serialize error");
                 return;
             }
@@ -116,7 +116,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
             }
         };
 
-        let addr = ctx.address();
+        let _addr = ctx.address();
 
         let command = Self::parse_text_message(&msg);
 
@@ -135,11 +135,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
                 println!("ping");
                 ctx.pong(&msg)
             }
-            ws::Message::Pong(msg) => {
+            ws::Message::Pong(_msg) => {
                 self.hb = Instant::now();
             }
 
-            ws::Message::Text(text) => {}
+            ws::Message::Text(_text) => {}
             ws::Message::Binary(bin) => ctx.binary(bin),
             ws::Message::Close(reason) => {
                 if let Some(reason) = reason {

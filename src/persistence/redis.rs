@@ -1,19 +1,6 @@
-use futures_util::Future;
 use redis;
-use redis::AsyncCommands;
-use redis::Commands;
-
 use redis::aio;
 
-use actix::fut::{ready, Ready};
-use actix_web::web;
-
-use std::borrow::Borrow;
-use std::borrow::BorrowMut;
-use std::rc::Rc;
-use std::sync::{Arc, Mutex};
-
-use std::cell::{RefCell};
 
 pub struct RedisProvider {
     connection: Option<aio::Connection>,

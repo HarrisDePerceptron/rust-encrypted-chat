@@ -1,6 +1,6 @@
 use crate::app::application_model::ApplicationModelTrait;
 use crate::app::application_service::ServiceTrait;
-use crate::app::service_redis::RedisApplicationService;
+use crate::app::redis::service::RedisApplicationService;
 
 use super::model::User;
 use super::service_model::UserServiceError;

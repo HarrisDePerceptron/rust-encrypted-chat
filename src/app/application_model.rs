@@ -90,7 +90,7 @@ impl Responder for RouteResponseError
 {
     type Body = BoxBody;
 
-    fn respond_to(self, req: &actix_web::HttpRequest) -> HttpResponse<Self::Body> {
+    fn respond_to(self, _req: &actix_web::HttpRequest) -> HttpResponse<Self::Body> {
         let response = serde_json::to_string(&self)
             .unwrap_or_else(|e| e.to_string());
 
@@ -147,7 +147,7 @@ where
                 
                 response.respond_to(req)
             },
-            Self::Error(v) => {
+            Self::Error(_v) => {
                 let response = RouteResponseError{
                     code: 400,
                     message: "error".to_string(),
@@ -169,7 +169,7 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std:: fmt::Result {
         let response = serde_json::to_string(self)
-            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+            .map_err(|_e| std::fmt::Error::from(std::fmt::Error))?;
 
         f.write_str(&response)
     }
@@ -196,7 +196,7 @@ where
         };
 
         let response = serde_json::to_string(&error_response)
-            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+            .map_err(|_e| std::fmt::Error::from(std::fmt::Error))?;
 
         f.write_str(&response)
     }
@@ -216,7 +216,7 @@ where
         };
 
         let response = serde_json::to_string(&error_response)
-            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+            .map_err(|_e| std::fmt::Error::from(std::fmt::Error))?;
 
         f.write_str(&response)
     }
@@ -229,7 +229,7 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std:: fmt::Result {
         let response = serde_json::to_string(&self)
-            .map_err(|e| std::fmt::Error::from(std::fmt::Error))?;
+            .map_err(|_e| std::fmt::Error::from(std::fmt::Error))?;
 
         f.write_str(&response)
     }

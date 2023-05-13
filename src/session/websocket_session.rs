@@ -1,13 +1,12 @@
 use actix::{
-    fut, Actor, ActorContext, ActorFutureExt, Addr, AsyncContext, ContextFutureSpawner, Handler,
-    StreamHandler, WrapFuture, Message,
+    fut, Actor, ActorContext, ActorFutureExt, Addr, AsyncContext, ContextFutureSpawner, WrapFuture,
 };
 use actix_web_actors::ws;
 
-use crate::session::TextMessage;
-use crate::server::messages::{Connect, CountAll, Disconnect, Join, ServerMessage};
-use crate::server::{usersession, UserSession, WebSocketServer};
-use std::collections::{HashMap, HashSet};
+
+use crate::server::messages::{Connect, Disconnect, ServerMessage};
+use crate::server::{UserSession, WebSocketServer};
+use std::collections::{HashMap};
 use std::time::{Duration, Instant};
 
 use uuid::Uuid;
@@ -89,7 +88,7 @@ impl WebSocketSession {
     }
 
     pub fn get_user_session(&self, addr: Addr<WebSocketSession>) -> Option<&UserSession> {
-        for (sid, sess) in &self.sessions {
+        for (_sid, sess) in &self.sessions {
             if addr == sess.session {
                 return Some(sess);
             }
@@ -99,7 +98,7 @@ impl WebSocketSession {
     }
 
     pub fn get_user_session_owned(&self, addr: Addr<WebSocketSession>) -> Option<UserSession> {
-        for (sid, sess) in &self.sessions {
+        for (_sid, sess) in &self.sessions {
             if addr == sess.session {
                 return Some(sess.to_owned());
             }
@@ -142,7 +141,7 @@ impl Actor for WebSocketSession {
             .then(|res, act, ctx| {
                 match res {
                     Ok(res) => act.id = res,
-                    Err(e) => ctx.stop(),
+                    Err(_e) => ctx.stop(),
                 }
 
                 fut::ready(())

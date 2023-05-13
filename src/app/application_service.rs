@@ -1,7 +1,7 @@
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use serde::{Serialize, de::DeserializeOwned};
 use crate::app::application_model::{ApplicationModel, ApplicationModelTrait};
 
-use std::future::Future;
+
 use async_trait::async_trait;
 
 use std::fmt;

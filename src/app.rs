@@ -1,14 +1,14 @@
 pub mod user;
 pub mod application_model;
 pub mod application_service;
-pub mod service_redis;
 pub mod application_factory;
 pub mod  application_utils;
 pub mod websocket;
 
+pub mod redis;
 
 
-use actix_web::{web, App};
+use actix_web::{web};
 
 
 use crate::routes::index::{say_hi,send_channel};

@@ -1,7 +1,7 @@
-use actix_identity::{Identity, IdentityMiddleware};
+use actix_identity::{Identity};
 
-use actix_web::ResponseError;
-use actix_web::{error, get, post, web, HttpMessage, HttpRequest, HttpResponse, Responder, Result};
+
+use actix_web::{get, post, web, HttpMessage, HttpRequest, HttpResponse, Responder, Result};
 
 use crate::auth;
 
@@ -11,7 +11,7 @@ use crate::app::application_factory::ServiceFactory;
 use super::routes_model;
 use super::service_model;
 
-use super::super::application_model::{RouteResponse, RouteResponseOk, RouteResponseError, RouteResponseErrorDefault, RouteResponseErrorCode};
+use super::super::application_model::{RouteResponse, RouteResponseErrorDefault};
 use super::service_trait::UserServiceTrait;
 
 
@@ -32,7 +32,7 @@ async fn index(
 async fn verify(param: web::Json<routes_model::VerifyRequest>) -> impl Responder {
     let token = &param.token;
 
-    let result = match auth::verify_token(token) {
+    let _result = match auth::verify_token(token) {
         Err(e) => return HttpResponse::BadRequest().body(e.to_string()),
         Ok(v) => v,
     };
@@ -43,7 +43,7 @@ async fn verify(param: web::Json<routes_model::VerifyRequest>) -> impl Responder
 
 #[post("/signup")]
 async fn signup(
-    req: HttpRequest,
+    _req: HttpRequest,
     param: web::Json<routes_model::SignupRequest>,
     service_factory: web::Data<ServiceFactory>
 ) -> Result<impl Responder> {

@@ -6,7 +6,7 @@ use crate::server::messages::{TextMessageAll, SendChannel};
 use crate::server::WebSocketServer;
 
 
-use crate::app::application_model::{RouteResponseOk, RouteResponse, RouteResponseError, RouteResponseErrorDefault};
+use crate::app::application_model::{RouteResponse, RouteResponseErrorDefault};
 
 use crate::server::messages;
 

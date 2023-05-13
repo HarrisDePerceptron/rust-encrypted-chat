@@ -1,8 +1,6 @@
-
-pub mod model;
 pub mod service;
-pub mod factory;
-pub mod routes;
-pub mod routes_model;
 pub mod service_model;
-pub mod service_trait;
+
+
+pub use service::*;
+pub use service_model::*;

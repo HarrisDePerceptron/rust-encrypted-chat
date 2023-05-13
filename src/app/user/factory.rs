@@ -2,9 +2,11 @@
 
 
 use super::service::UserService;
-use crate::persistence::redis::RedisProvider;
 
-use crate::app::service_redis::{DataStructure, RedisFactory};
+
+use crate::app::redis::model::{DataStructure};
+use crate::app::redis::factory::{RedisFactory};
+
 use crate::app::application_factory::FactoryTrait;
 
 
