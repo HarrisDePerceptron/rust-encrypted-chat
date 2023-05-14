@@ -23,6 +23,10 @@ use encrypted_chat::app::user::factory::{UserFactory};
 use encrypted_chat::app::application_factory::{ServiceFactory};
 
 
+use encrypted_chat::app::websocket::{WebsocketService, WebsocketServiceTrait};
+
+
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok().expect(".dot env file unable to load");
@@ -48,6 +52,13 @@ async fn main() -> std::io::Result<()> {
 
     let factory_state = web::Data::new(sf);
 
+    
+    let mut ws_service = WebsocketService::new();
+
+    let res  = ws_service.load()
+        .await.expect("Unable to load channels");
+
+    println!("Channel res: {:?}", res);
 
     let server = HttpServer::new(move || {
         let session_mw =

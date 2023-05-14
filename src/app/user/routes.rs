@@ -22,7 +22,7 @@ async fn index(
     auth: Option<auth_extractor::UserAuthSession>,
 ) -> Result<impl Responder> {
     let auth = auth
-        .ok_or(RouteResponseErrorDefault("auith infomation not found".to_string()))?;
+        .ok_or(RouteResponseErrorDefault("auth infomation not found".to_string()))?;
     
     Ok(RouteResponse::Ok(auth))
 }

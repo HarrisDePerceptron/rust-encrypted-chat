@@ -14,18 +14,19 @@ use serde::{Serialize, de::DeserializeOwned};
 use async_trait::async_trait;
 
 use crate::app::application_model::ApplicationModel;
-// use crate::app::websocket::model::Websocket;
-
 use super::channel::Channel;
 
+use crate::app::websocket::{ChannelData, WebsocketService, WebsocketServiceTrait};
+
+
 #[derive(Debug, Serialize, Clone)]
-enum WebsocketServerError {
+pub enum WebsocketServerError {
     PersistenceLoadError(String),
     PersistenceSaveError(String)
 }
 
 #[async_trait]
-trait WebsocketPersistence<T>
+pub trait WebsocketPersistence<T>
 where 
     T: Debug + Clone + Serialize + DeserializeOwned + 'static
 {
@@ -33,55 +34,39 @@ where
 
     async fn load(&self)-> Result<(), WebsocketServerError>;
     async fn save (&self, channel: &Channel) -> Result<(), WebsocketServerError >;
-    fn get_persistence(&self) -> Self::Persistence;
 
-    async fn sync_channels(&self) ->  HashMap<String, Channel>;
 
 
 }
 
 
-// #[async_trait]
-// impl<T> WebsocketPersistence<T> for WebSocketServer 
-// where
-//     T: Debug + Clone + Serialize + DeserializeOwned + 'static + std::marker::Send
-// {
-//     type Persistence = RedisApplicationService;
+#[async_trait]
+impl<T> WebsocketPersistence<T> for WebSocketServer 
+where
+    T: Debug + Clone + Serialize + DeserializeOwned + 'static + std::marker::Send
+{
+    type Persistence = RedisApplicationService;
 
-//     async fn load(&self)-> Result<(), WebsocketServerError> {
-//         let mut persistence = <WebSocketServer as WebsocketPersistence<T>>::get_persistence(self);
-//         let _result: ApplicationModel<Websocket> = persistence.find_by_id("websocket:mapping")
-//             .await
-//             .map_err(|e| WebsocketServerError::PersistenceLoadError(format!("{:?}",e)))?;
-   
+    async fn load(&self)-> Result<(), WebsocketServerError> {
+        let mut service = WebsocketService::new();
+        let result = service.load()
+            .await
+            .map_err(|e| WebsocketServerError::PersistenceLoadError(e.to_string()) )?;
 
-//         Ok(())
-//     }
 
-//     async fn save(&self, _channel: &Channel) -> Result<(), WebsocketServerError > {
-//         let mut persistence = <WebSocketServer as WebsocketPersistence<T>>::get_persistence(self);
-//         let _result: ApplicationModel<Websocket> = persistence.find_by_id("websocket:mapping")
-//             .await
-//             .map_err(|e| WebsocketServerError::PersistenceLoadError(format!("{:?}",e)))?;
+        println!("Loading channels ...");
+        for ch in result{
+            println!("Channel: {:?}", ch)
+            // self.channels.insert(k, v)
+        }
+        Ok(())
+    }
 
+    async fn save(&self, _channel: &Channel) -> Result<(), WebsocketServerError > {
         
-//         Ok(())
-//     }
-
-
-//     fn get_persistence(&self) -> Self::Persistence {
-//         let redis = RedisFactory::new("channel", DataStructure::UnorderedSet);
-//         let redis_service = redis.get();
-
-//         return redis_service;
-
-//     }
-
-
-//     async fn sync_channels(&self) ->  HashMap<String, Channel> {
-//         // let persistence = self.get_persistence();
         
-//         todo!()
-        
-//     }
-// }
+        Ok(())
+    }
+
+
+}

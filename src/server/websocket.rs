@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use actix::{Actor, Addr, Context, Handler, Message, Recipient, ResponseFuture};
+use actix::{Actor, Addr, Context, Handler, Message, Recipient, ResponseFuture, WrapFuture};
 use crate::server::messages::{
     Connect, CountAll, Disconnect, Join, SendChannel, ServerMessage, TextMessageAll,
 };
@@ -19,6 +19,11 @@ use crate::server::channel;
 use crate::utils;
 use super::messages;
 use super::model;
+use super::websocket_provider_redis::WebsocketPersistence;
+
+use crate::app::websocket::{WebsocketService,WebsocketServiceTrait, ChannelData};
+
+use actix::AsyncContext;
 
 
 pub struct WebSocketServer {
@@ -46,8 +51,9 @@ impl WebSocketServer {
 
     pub fn new() -> Self {
         let mut channels = HashMap::new();
-        channels.insert("default".to_string(), Channel::new("default"));
-
+        channels.insert("default".to_string(), Channel::new("default"));       
+        
+        
         Self {
             index: 0,
             channels: channels,
@@ -56,36 +62,112 @@ impl WebSocketServer {
         }
     }
 
-    fn join_channel_default(
-        &mut self,
-        user_session: &UserSession,
-    ) -> Result<(), channel::ChannelError> {
-        self.join_channel("default", user_session)
+    fn add_channel(&mut self, ch: Channel) -> Result<(), String>{
+
+        if self.channels.contains_key(&ch.name) {
+           return Err(format!("channel {} already exisits", ch.name));
+        }
+
+        self.channels.insert(ch.name.to_string(), ch);
+
+        Ok(())
+        
     }
 
-    pub fn join_channel(
+    async fn join_channel_default(
+        &mut self,
+        user_session: &UserSession,
+    ) -> Result<(), model::WebsocketServerError> 
+    {
+        self.join_channel("default", user_session)
+            .await
+    }
+
+    pub async fn join_channel(
         &mut self,
         name: &str,
         user_session: &UserSession,
-    ) -> Result<(), channel::ChannelError> {
+    ) 
+    -> Result<(), model::WebsocketServerError>
+        // -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), model::WebsocketServerError>>>>
+     {
         let ch = self.channels.get_mut(name);
 
-        if let Some(ch) = ch {
-            match ch.add_session(user_session) {
-                Err(e) => return Err(e),
-                _ => (),
+
+        let channel =  match ch{
+            Some(v) => {
+                v.add_session(user_session)
+                .map_err(|e|model::WebsocketServerError::SessionChannellAddError(format!("{:?}", e)))?;
+                v.clone()
+            },
+            None =>  {
+                let mut ch_default = Channel::new(name);
+                ch_default.add_session(user_session)
+                .map_err(|e|model::WebsocketServerError::SessionChannellAddError(format!("{:?}", e)))?;
+
+
+                self.channels.insert(name.to_string(), ch_default.clone());
+                ch_default
             }
-        } else {
-            let mut ch_default = Channel::new(name);
-            match ch_default.add_session(user_session) {
-                Err(e) => return Err(e),
-                _ => (),
+        };
+        // if let Some(ch) = ch {
+        //     match ch.add_session(user_session) {
+        //         Err(e) => return Err(e),
+        //         _ => (),
+        //     }
+        // } else {
+        //     let mut ch_default = Channel::new(name);
+        //     match ch_default.add_session(user_session) {
+        //         Err(e) => return Err(e),
+        //         _ => (),
+        //     };
+
+
+        //     self.channels.insert(name.to_string(), ch_default);
+        // }
+
+
+        // let fut = async {
+        //     let mut service = WebsocketService::new();
+        //     let data = ChannelData {
+        //         id: channel.id,
+        //         name: channel.name
+        //     };
+
+        //     service.store(data)
+        //         .await
+        // };
+
+        // let fut_wrap = actix::fut::wrap_future()
+
+        // actix::System::new().block_on(async {
+        //     let mut service = WebsocketService::new();
+        //     let data = ChannelData {
+        //         id: channel.id,
+        //         name: channel.name
+        //     };
+
+        //     service.store(data)
+        //         .await
+        //         // .unwrap_or_else(|e| println!("{:?}", e))
+        // }).map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))?;
+
+    
+
+
+            let mut service = WebsocketService::new();
+            let data = ChannelData {
+                id: channel.id,
+                name: channel.name
             };
 
-            self.channels.insert(name.to_string(), ch_default);
-        }
+            service.store(data)
+                .await
+                .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))?;
 
-        Ok(())
+            Ok(())
+                
+        
     }
 
     pub fn get_channel(&self, channel: &str) -> Option<&Channel> {
@@ -283,11 +365,12 @@ impl Handler<ServerMessage<Join>> for WebSocketServer {
 
     fn handle(&mut self, msg: ServerMessage<Join>, _ctx: &mut Self::Context) -> Self::Result {
         println!("Joining channel...");
-
         let sess = self.get_session(&msg.session.session_id);
 
         if let Some(sess) = sess {
-            let user_session = sess.to_owned();
+            let user_session = sess.to_owned();           
+
+          
 
             match self.join_channel(&msg.name, &user_session) {
                 Err(e) => {

@@ -17,8 +17,8 @@ use redis::AsyncCommands;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChannelData {
-    id: String,
-    name: String,
+    pub id: String,
+    pub name: String,
 }
 
 

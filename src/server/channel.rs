@@ -8,6 +8,8 @@ use crate::server::server_response::ServerResponse;
 use crate::utils;
 
 
+
+#[derive(Debug, Clone)]
 pub struct Channel {
     pub id: String,
     pub name: String,
@@ -16,7 +18,7 @@ pub struct Channel {
 
 
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub enum ChannelError{
     AlreadyAdded(String)
 }
