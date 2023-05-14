@@ -24,6 +24,7 @@ use super::websocket_provider_redis::WebsocketPersistence;
 use crate::app::websocket::{WebsocketService,WebsocketServiceTrait, ChannelData};
 
 use actix::AsyncContext;
+use actix::prelude::*;
 
 
 pub struct WebSocketServer {
@@ -80,10 +81,9 @@ impl WebSocketServer {
     ) -> Result<(), model::WebsocketServerError> 
     {
         self.join_channel("default", user_session)
-            .await
     }
 
-    pub async fn join_channel(
+    pub fn join_channel(
         &mut self,
         name: &str,
         user_session: &UserSession,
@@ -155,15 +155,15 @@ impl WebSocketServer {
     
 
 
-            let mut service = WebsocketService::new();
-            let data = ChannelData {
-                id: channel.id,
-                name: channel.name
-            };
+            // let mut service = WebsocketService::new();
+            // let data = ChannelData {
+            //     id: channel.id,
+            //     name: channel.name
+            // };
 
-            service.store(data)
-                .await
-                .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))?;
+            // service.store(data)
+            //     .await
+            //     .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))?;
 
             Ok(())
                 
@@ -298,6 +298,30 @@ impl WebSocketServer {
         
     }
 
+    pub fn store_channel(channel: Channel,_self: &Self,  ctx: &mut Context<Self>){
+
+        async {
+            let mut service = WebsocketService::new();
+            let data = ChannelData {
+                id: channel.id,
+                name: channel.name
+            };
+    
+            service.store(data)
+                .await
+                .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))
+
+        }.into_actor(_self)
+        .then(|res, _self, ctx| {
+            
+            if let Err(e) = res {
+                print!("Failed to store channel: {}", e.to_string());
+            }
+            actix::fut::ready(())
+        }).wait(ctx);
+
+        ()
+    } 
 }
 
 impl Handler<ServerMessage<Connect>> for WebSocketServer {
@@ -366,34 +390,50 @@ impl Handler<ServerMessage<Join>> for WebSocketServer {
     fn handle(&mut self, msg: ServerMessage<Join>, _ctx: &mut Self::Context) -> Self::Result {
         println!("Joining channel...");
         let sess = self.get_session(&msg.session.session_id);
+        let channel_name = msg.name.to_string();
 
-        if let Some(sess) = sess {
-            let user_session = sess.to_owned();           
 
-          
+        let user_session = match sess {
+            Some(v) => v.to_owned(),
+            None => {println!("Unable to fetch user serssion"); return}
+        };
 
-            match self.join_channel(&msg.name, &user_session) {
-                Err(e) => {
-                    let msg = format!("{:?}", e);
-                    // self.send_to_session(&user_session, &msg, None);
-                    match self.send_error(&user_session, ErrorMessage { error_message: msg, error_code: 0 }){
-                        Err(e) => {println!("Join error: {}", e); return;},
-                        _ => ()
-                    };
-                    return;
-                }
-                Ok(_) => (),
+        match self.join_channel(&msg.name, &user_session) {
+            Err(e) => {
+                let msg = format!("{:?}", e);
+                // self.send_to_session(&user_session, &msg, None);
+                match self.send_error(&user_session, ErrorMessage { error_message: msg, error_code: 0 }){
+                    Err(e) => {println!("Join error: {}", e); return;},
+                    _ => ()
+                };
+                return;
             }
-
-            let response_message = format!("Joined channel {}", msg.name);
-            let data = server_response::ServerResponse::JOIN(server_response::ResponseBase {
-                message: response_message.to_owned(),
-                message_id: msg.message_id,
-                data: server_response::JoinResponse {},
-            });
-
-            self.send_to_session(&msg.session, &response_message, Some(data));
+            Ok(_) => (),
         }
+
+        let response_message = format!("Joined channel {}", msg.name);
+        let data = server_response::ServerResponse::JOIN(server_response::ResponseBase {
+            message: response_message.to_owned(),
+            message_id: msg.message_id,
+            data: server_response::JoinResponse {},
+        });
+
+        self.send_to_session(&msg.session, &response_message, Some(data));
+        
+
+        let channel = match self.get_channel(&channel_name){
+            None => {
+                self.send_error(&user_session, ErrorMessage { error_message: format!("Failed to fetch channel {}", &channel_name), error_code: 0 })
+                    .unwrap_or_else(|e| println!("Unable to send error: {}", e));
+
+                return;
+            },
+            Some(v) => v.to_owned()
+        };
+
+        Self::store_channel(channel, &self, _ctx);
+
+        
     }
 }
 
