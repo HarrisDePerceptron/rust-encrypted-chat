@@ -14,12 +14,7 @@ use serde::{Serialize, Deserialize};
 use redis::AsyncCommands;
 
 
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChannelData {
-    pub id: String,
-    pub name: String,
-}
+use super::service_model;
 
 
 
@@ -28,12 +23,12 @@ pub trait WebsocketServiceTrait
 {
     async fn store(
         &mut self,
-        channel: ChannelData
+        channel: service_model::ChannelData
     ) -> Result<(), WebsocketServiceError>;
 
     async fn load(
         &mut self,
-    ) -> Result<Vec<ChannelData>, WebsocketServiceError>;
+    ) -> Result<Vec<service_model::ChannelData>, WebsocketServiceError>;
 
 }
 
@@ -62,7 +57,7 @@ impl WebsocketService {
 impl WebsocketServiceTrait for WebsocketService {
     async fn store(
         &mut self,
-        channel: ChannelData
+        channel: service_model::ChannelData
     ) -> Result<(),WebsocketServiceError> {
         
         let conn = self.redis_provider.get_connection()
@@ -83,7 +78,7 @@ impl WebsocketServiceTrait for WebsocketService {
 
     async fn load(
         &mut self,
-    ) -> Result<Vec<ChannelData>, WebsocketServiceError> {
+    ) -> Result<Vec<service_model::ChannelData>, WebsocketServiceError> {
 
         let conn = self.redis_provider.get_connection()
             .await
@@ -93,7 +88,7 @@ impl WebsocketServiceTrait for WebsocketService {
             .await
             .map_err(|e| WebsocketServiceError::LoadError(e.to_string()) )?;
 
-        let  mut channels: Vec<ChannelData> = Vec::new();
+        let  mut channels: Vec<service_model::ChannelData> = Vec::new();
 
         for i in 0..self.max_channels {
             let item: Option<String>= res.next_item()
@@ -104,7 +99,7 @@ impl WebsocketServiceTrait for WebsocketService {
                 None => break
             };
             
-            let data: ChannelData = match serde_json::from_str(&v) {
+            let data: service_model::ChannelData = match serde_json::from_str(&v) {
                 Err(e) => continue,
                 Ok(v) => v
             };

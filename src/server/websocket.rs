@@ -110,60 +110,6 @@ impl WebSocketServer {
                 ch_default
             }
         };
-        // if let Some(ch) = ch {
-        //     match ch.add_session(user_session) {
-        //         Err(e) => return Err(e),
-        //         _ => (),
-        //     }
-        // } else {
-        //     let mut ch_default = Channel::new(name);
-        //     match ch_default.add_session(user_session) {
-        //         Err(e) => return Err(e),
-        //         _ => (),
-        //     };
-
-
-        //     self.channels.insert(name.to_string(), ch_default);
-        // }
-
-
-        // let fut = async {
-        //     let mut service = WebsocketService::new();
-        //     let data = ChannelData {
-        //         id: channel.id,
-        //         name: channel.name
-        //     };
-
-        //     service.store(data)
-        //         .await
-        // };
-
-        // let fut_wrap = actix::fut::wrap_future()
-
-        // actix::System::new().block_on(async {
-        //     let mut service = WebsocketService::new();
-        //     let data = ChannelData {
-        //         id: channel.id,
-        //         name: channel.name
-        //     };
-
-        //     service.store(data)
-        //         .await
-        //         // .unwrap_or_else(|e| println!("{:?}", e))
-        // }).map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))?;
-
-    
-
-
-            // let mut service = WebsocketService::new();
-            // let data = ChannelData {
-            //     id: channel.id,
-            //     name: channel.name
-            // };
-
-            // service.store(data)
-            //     .await
-            //     .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))?;
 
             Ok(())
                 
@@ -303,7 +249,6 @@ impl WebSocketServer {
         async {
             let mut service = WebsocketService::new();
             let data = ChannelData {
-                id: channel.id,
                 name: channel.name
             };
     

@@ -1,5 +1,5 @@
 use std::fmt::{Debug};
-use serde::{Serialize};
+use serde::{Serialize, Deserialize};
 
 
 
@@ -23,3 +23,10 @@ where
         f.write_str(&response)
     }
 }
+
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChannelData {
+    pub name: String,
+}
+
