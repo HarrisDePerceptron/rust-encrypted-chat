@@ -1,6 +1,6 @@
 use actix_web::error::{ErrorUnauthorized};
 
-use actix_web::{dev, Error, FromRequest, HttpMessage, HttpRequest};
+use actix_web::{dev, Error, FromRequest, HttpRequest};
 use futures_util::Future;
 use serde::{Serialize,Deserialize};
 

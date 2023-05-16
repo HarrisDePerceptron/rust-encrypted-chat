@@ -23,14 +23,13 @@ pub fn parse_jwt_token_header(token: &str) -> Result<String, String> {
 }
 
 pub fn parse_cookie(cookie: &Option<Identity>) -> Result<String, String> {
-    let mut token = String::new();
 
     let cookie = match cookie {
         None => return Err("Cookie not found".to_string()),
         Some(v) => v,
     };
 
-    token = match cookie.id() {
+    let token = match cookie.id() {
         Err(e) => return Err(e.to_string()),
         Ok(v) => v,
     };

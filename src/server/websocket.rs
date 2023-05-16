@@ -13,17 +13,17 @@ use crate::server::server_response;
 use super::server_response::{
     ConnectResponse, CountResponse, ResponseBase, ServerResponse
 };
-use crate::server::channel;
+
 
 
 use crate::utils;
 use super::messages;
 use super::model;
-use super::websocket_provider_redis::WebsocketPersistence;
+
 
 use crate::app::websocket::{WebsocketService,WebsocketServiceTrait, ChannelData};
 
-use actix::AsyncContext;
+// use actix::AsyncContext;
 use actix::prelude::*;
 
 
@@ -37,6 +37,13 @@ pub struct WebSocketServer {
 
 impl Actor for WebSocketServer {
     type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        println!("loading channels...");
+        Self::load_channels(self, ctx);
+
+        println!("Channels loaded: {:?}", self.channels);
+    }
 }
 
 impl WebSocketServer {
@@ -94,7 +101,7 @@ impl WebSocketServer {
         let ch = self.channels.get_mut(name);
 
 
-        let channel =  match ch{
+        let _channel =  match ch{
             Some(v) => {
                 v.add_session(user_session)
                 .map_err(|e|model::WebsocketServerError::SessionChannellAddError(format!("{:?}", e)))?;
@@ -251,22 +258,65 @@ impl WebSocketServer {
             let data = ChannelData {
                 name: channel.name
             };
+
     
             service.store(data)
                 .await
                 .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))
 
         }.into_actor(_self)
-        .then(|res, _self, ctx| {
+        .then(|res, _self, _ctx| {
             
             if let Err(e) = res {
-                print!("Failed to store channel: {}", e.to_string());
+                println!("Failed to store channel: {}", e.to_string());
             }
             actix::fut::ready(())
         }).wait(ctx);
 
         ()
-    } 
+    }
+    
+    pub fn load_channels(_self: &Self,  ctx: &mut Context<Self>){
+
+        async {
+            let mut service = WebsocketService::new();
+    
+            service.load()
+                .await
+                .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))
+
+        }.into_actor(_self)
+        .then(|res, _self, _ctx| {
+         
+            
+            let channels = match res {
+                Err(e) =>{
+                    println!("Failed to store channel: {}", e.to_string());
+                    return  actix::fut::ready(())
+                },
+                Ok(v) => v
+            };
+            
+            let channels: Vec<Channel> = channels.iter()
+                .map(|e| Channel::new(&e.name))
+                .collect();
+
+            for ch in channels{
+                _self.add_channel(ch)
+                    .unwrap_or_else(|e| println!("Error adding channel: {}", e.to_string()));
+
+            }
+            _self.on_load_channels();
+            
+            actix::fut::ready(())
+        }).wait(ctx);
+
+        ()
+    }
+
+    fn on_load_channels(&self) -> (){
+        println!("Channels loaded!: {:?}", self.channels);
+    }
 }
 
 impl Handler<ServerMessage<Connect>> for WebSocketServer {

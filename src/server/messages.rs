@@ -8,7 +8,6 @@ use crate::server::UserSession;
 use super::model;
 
 
-
 pub struct ServerMessage<T> {
     pub message: T,
     pub session: UserSession,

@@ -153,8 +153,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
                 ctx.stop();
             }
             ws::Message::Continuation(_) => ctx.stop(),
-            ws::Message::Nop => (),
-            _ => (),
+            ws::Message::Nop => ()
         }
     }
 }

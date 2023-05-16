@@ -66,7 +66,7 @@ impl WebsocketServiceTrait for WebsocketService {
 
 
         let data_str = serde_json::to_string(&channel)
-            .map_err(|e| WebsocketServiceError::SignupError(e.to_string()))?;
+            .map_err(|e| WebsocketServiceError::StoreError(e.to_string()))?;
 
         conn.sadd("channels",data_str)
             .await

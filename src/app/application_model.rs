@@ -1,5 +1,5 @@
 use std::ops::{Deref, DerefMut};
-use std::fmt::{Debug, Display, Write};
+use std::fmt::{Debug, Display};
 use actix_web::body::BoxBody;
 use serde::{Serialize, Deserialize,de::DeserializeOwned};
 use actix_web::{HttpResponse,  Responder};

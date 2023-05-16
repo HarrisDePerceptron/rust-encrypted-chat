@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use actix::Actor;
 use actix_web::{web, App, HttpServer};
 
@@ -54,7 +56,6 @@ async fn main() -> std::io::Result<()> {
 
     
     let mut ws_service = WebsocketService::new();
-
     let res  = ws_service.load()
         .await.expect("Unable to load channels");
 

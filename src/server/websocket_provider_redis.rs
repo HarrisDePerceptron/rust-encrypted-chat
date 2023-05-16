@@ -1,22 +1,22 @@
 
 use super::websocket::WebSocketServer;
-use crate::app::application_factory::FactoryTrait;
+
 use crate::app::application_service::{ApplicationServiceTrait};
 
 use crate::app::redis::service::{RedisApplicationService};
-use crate::app::redis::factory::{RedisFactory};
-use crate::app::redis::model::{DataStructure};
 
 
-use std::collections::HashMap;
+
+
+
 use std::fmt::Debug;
 use serde::{Serialize, de::DeserializeOwned};
 use async_trait::async_trait;
 
-use crate::app::application_model::ApplicationModel;
+
 use super::channel::Channel;
 
-use crate::app::websocket::{ChannelData, WebsocketService, WebsocketServiceTrait};
+use crate::app::websocket::{WebsocketService, WebsocketServiceTrait};
 
 
 #[derive(Debug, Serialize, Clone)]
