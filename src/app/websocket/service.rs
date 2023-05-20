@@ -1,4 +1,6 @@
 
+use std::sync::{Arc, Mutex};
+
 use crate::{app::{redis::service::RedisApplicationService, application_service::ServiceTrait, application_model::ApplicationModel}, persistence};
 
 use async_trait::async_trait;
@@ -9,12 +11,14 @@ use crate::persistence::redis::RedisProvider;
 
 
 use serde_json;
-use serde::{Serialize, Deserialize};
-
 use redis::AsyncCommands;
 
 
 use super::service_model;
+use futures_util::StreamExt;
+
+use actix;
+
 
 
 
@@ -30,11 +34,24 @@ pub trait WebsocketServiceTrait
         &mut self,
     ) -> Result<Vec<service_model::ChannelData>, WebsocketServiceError>;
 
+    async fn subscribe_channels(&mut self,  channel: Vec<service_model::ChannelData>) 
+        -> Result<(), WebsocketServiceError>;
+
+
+    async fn publish_channel(&mut self,  channel: String,  message: String) 
+        -> Result<(), WebsocketServiceError>;
+
+
+    fn stop(&mut self) -> ();
+    
+
+
 }
 
 pub struct WebsocketService {
     redis_provider: RedisProvider,
-    max_channels: usize
+    max_channels: usize,
+    running: Arc<Mutex<bool>>
 
 }
 
@@ -45,7 +62,8 @@ impl WebsocketService {
         
         Self {
             redis_provider: provider,
-            max_channels: 10000
+            max_channels: 10000,
+            running: Arc::new(Mutex::new(true))
         }
     }
 }
@@ -112,4 +130,75 @@ impl WebsocketServiceTrait for WebsocketService {
         Ok(channels)
 
     }
+
+
+    async fn subscribe_channels(&mut self, channels: Vec<service_model::ChannelData>) -> Result<(), WebsocketServiceError>{
+        
+        let conn = self.redis_provider
+            .connect()
+            .await
+            .map_err(|e| WebsocketServiceError::RedisConnectionError(e.to_string()))?;
+
+        let mut pubsub = conn.into_pubsub();
+        
+        for ch in  channels {
+            let sub_result = pubsub.subscribe(ch.name).await;
+            
+            if let Err(e) = sub_result {
+                println!("Got subscribing error: {}", e.to_string());
+                continue;
+            }
+        }
+        let mut msg_stream = pubsub.into_on_message();
+        
+        let running = self.running.clone();
+
+
+
+        loop{
+            println!("hi in the loop guys");
+            let msg = msg_stream.next().await;
+            
+            if let Some(msg) = msg{
+                let payload: Result<String, redis::RedisError> = msg.get_payload();
+                let payload = match payload {
+                    Err(e) => continue,
+                    Ok(v) => v
+                };
+
+                println!("got payload: {}", payload);
+
+            }
+
+        };
+       
+
+        Ok(())
+    }
+
+
+    fn stop(&mut self){
+        let mut running = self.running.lock().expect("unable to lock the running mutex");
+        *running = false;
+    }
+
+
+    async fn publish_channel(&mut self,  channel: String,  message: String) 
+        -> Result<(), WebsocketServiceError> {
+    
+
+        let conn = self.redis_provider
+            .get_connection()
+            .await
+            .map_err(|e|WebsocketServiceError::RedisConnectionError(e.reason))?;
+        
+        let res:Result<(), redis::RedisError>= conn
+            .publish(channel, message)
+            .await;
+        
+        
+
+        Ok(())
+    }
+
 }

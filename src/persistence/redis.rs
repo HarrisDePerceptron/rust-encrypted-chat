@@ -14,12 +14,23 @@ impl RedisProvider {
     pub fn new() -> Self {
         Self { connection: None }
     }
+
+    fn get_client(&self) -> redis::Client{
+        let client = redis::Client::open("redis://:87654321@localhost:6379").expect("redis client failed to connect");
+        return client;
+    }
     pub async fn connect(&self) -> redis::RedisResult<aio::Connection> {
-        let client = redis::Client::open("redis://:87654321@localhost:6379").unwrap();
+        let client = self.get_client();
+
         let con = client.get_async_connection().await?;
 
-
         Ok(con)
+    }
+
+    pub fn connect_sync(&self) -> redis::RedisResult<redis::Connection> {
+        let client = self.get_client();
+        let conn = client.get_connection();
+        conn
     }
 
     pub async fn get_connection(&mut self) -> Result<&mut aio::Connection, RedisProviderError> {

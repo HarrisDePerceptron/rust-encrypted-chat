@@ -23,8 +23,10 @@ use super::model;
 
 use crate::app::websocket::{WebsocketService,WebsocketServiceTrait, ChannelData};
 
+
 // use actix::AsyncContext;
 use actix::prelude::*;
+
 
 
 pub struct WebSocketServer {
@@ -172,7 +174,7 @@ impl WebSocketServer {
     pub fn send_to_channel(&self, channel: &str, message: &str, data: Option<ServerResponse>) {
         let ch = self.get_channel(channel);
         if let Some(ch) = ch {
-            ch.send(message, data);
+            ch.send(message, data);            
         }
     }
 
@@ -306,7 +308,7 @@ impl WebSocketServer {
                     .unwrap_or_else(|e| println!("Error adding channel: {}", e.to_string()));
 
             }
-            _self.on_load_channels();
+            Self::on_load_channels(_self, _ctx);
             
             actix::fut::ready(())
         }).wait(ctx);
@@ -314,8 +316,86 @@ impl WebSocketServer {
         ()
     }
 
-    fn on_load_channels(&self) -> (){
-        println!("Channels loaded!: {:?}", self.channels);
+    fn on_load_channels(_self: &Self, ctx: &mut Context<Self>) -> (){
+        
+        let channels: Vec<ChannelData> = _self.channels
+            .iter()
+            .map(|(k , v)| ChannelData{
+                name: v.name.to_string()
+            })
+            .collect();
+
+        // async {
+        //     let mut service = WebsocketService::new();
+
+        //     service.subscribe_channels(channels)
+        //         .await
+        //         .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))
+
+        // }.into_actor(_self)
+        // .then(|res, _self, _ctx| {
+         
+            
+        //     let channels = match res {
+        //         Err(e) =>{
+        //             println!("Failed to store channel: {}", e.to_string());
+        //             return  actix::fut::ready(())
+        //         },
+        //         Ok(v) => v
+        //     };
+           
+        //     actix::fut::ready(())
+        // }).wait(ctx);
+
+
+        let execution =  async {
+                let mut service = WebsocketService::new();
+    
+                service.subscribe_channels(channels)
+                    .await
+                    .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()));
+    
+            };
+
+
+
+        let ar = Arbiter::new();
+
+        Arbiter::spawn(&ar, execution);
+
+
+        ()
+    }
+
+    pub fn publish_to_channels(_self: &Self,  ctx: &mut Context<Self>, channel: &str, message: &str){
+
+        let ch = channel.to_string();
+        let msg = message.to_string();
+
+        async {
+            let mut service = WebsocketService::new();
+    
+            service.publish_channel(ch, msg)
+                .await
+                .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))
+
+        }.into_actor(_self)
+        .then(|res, _self, _ctx| {
+         
+            
+            match res {
+                Err(e) =>{
+                    println!("Failed to publish to channel: {}", e.to_string());
+                    return  actix::fut::ready(())
+                },
+                Ok(v) => v
+            };
+            
+        
+            actix::fut::ready(())
+        }).wait(ctx);
+
+        ()
     }
 }
 
@@ -455,6 +535,9 @@ impl Handler<ServerMessage<SendChannel>> for WebSocketServer {
             data: server_response::SendChannelResponse {},
         });
         self.send_to_channel(&msg.channel_name, &response_message, Some(data));
+
+        Self::publish_to_channels(self, _ctx, &msg.channel_name, &msg.msg);
+
     }
 }
 

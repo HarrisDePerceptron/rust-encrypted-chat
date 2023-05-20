@@ -9,7 +9,9 @@ pub enum WebsocketServiceError {
     SignupError(String),
     IncorrectDataStructure(String),
     StoreError(String),
-    LoadError(String)
+    LoadError(String),
+    RedisConnectionError(String),
+    PublishChannelError(String)
 }
 
 impl std::fmt::Display for WebsocketServiceError
