@@ -34,6 +34,7 @@ pub struct WebSocketServer {
     pub sessions: HashMap<String, UserSession>,
     pub channels: HashMap<String, Channel>,
     pub ch_id: usize,
+    pub arbiter_subscriber: Arbiter,
     
 }
 
@@ -69,6 +70,7 @@ impl WebSocketServer {
             channels: channels,
             sessions: HashMap::new(),
             ch_id: 0,
+            arbiter_subscriber: Arbiter::new()
         }
     }
 
@@ -324,44 +326,30 @@ impl WebSocketServer {
                 name: v.name.to_string()
             })
             .collect();
+        
+        let current_channels = _self.channels.clone();
 
-        // async {
-        //     let mut service = WebsocketService::new();
+        let (tx, rx): (std::sync::mpsc::Sender<String>, std::sync::mpsc::Receiver<String>) = std::sync::mpsc::channel();
 
-        //     service.subscribe_channels(channels)
-        //         .await
-        //         .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))
+        let tx1 = tx.clone();
+        let addr = ctx.address();
 
-        // }.into_actor(_self)
-        // .then(|res, _self, _ctx| {
-         
-            
-        //     let channels = match res {
-        //         Err(e) =>{
-        //             println!("Failed to store channel: {}", e.to_string());
-        //             return  actix::fut::ready(())
-        //         },
-        //         Ok(v) => v
-        //     };
-           
-        //     actix::fut::ready(())
-        // }).wait(ctx);
-
-
-        let execution =  async {
+        let execution =  async move {
                 let mut service = WebsocketService::new();
-    
-                service.subscribe_channels(channels)
+
+
+                let res = service.subscribe_channels(channels, addr)
                     .await
                     .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()));
+
+                if let Err(e) = res {
+                    println!("Subscription error: {}", e.to_string());
+                }
+
+
+        };
     
-            };
-
-
-
-        let ar = Arbiter::new();
-
-        Arbiter::spawn(&ar, execution);
+            _self.arbiter_subscriber.spawn(execution);
 
 
         ()

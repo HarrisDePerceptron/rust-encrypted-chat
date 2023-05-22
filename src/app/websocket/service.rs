@@ -20,6 +20,11 @@ use futures_util::StreamExt;
 use actix;
 
 
+use crate::server::WebSocketServer;
+use crate::server::messages as ServerMessage;
+
+
+
 
 
 #[async_trait]
@@ -34,7 +39,7 @@ pub trait WebsocketServiceTrait
         &mut self,
     ) -> Result<Vec<service_model::ChannelData>, WebsocketServiceError>;
 
-    async fn subscribe_channels(&mut self,  channel: Vec<service_model::ChannelData>) 
+    async fn subscribe_channels(&mut self,  channel: Vec<service_model::ChannelData>, addr: actix::Addr<WebSocketServer>) 
         -> Result<(), WebsocketServiceError>;
 
 
@@ -132,7 +137,7 @@ impl WebsocketServiceTrait for WebsocketService {
     }
 
 
-    async fn subscribe_channels(&mut self, channels: Vec<service_model::ChannelData>) -> Result<(), WebsocketServiceError>{
+    async fn subscribe_channels(&mut self, channels: Vec<service_model::ChannelData>, addr: actix::Addr<WebSocketServer>) -> Result<(), WebsocketServiceError>{
         
         let conn = self.redis_provider
             .connect()
@@ -153,8 +158,6 @@ impl WebsocketServiceTrait for WebsocketService {
         
         let running = self.running.clone();
 
-
-
         loop{
             println!("hi in the loop guys");
             let msg = msg_stream.next().await;
@@ -167,6 +170,13 @@ impl WebsocketServiceTrait for WebsocketService {
                 };
 
                 println!("got payload: {}", payload);
+
+                addr.do_send(ServerMessage::SendChannel{
+                    msg: payload,
+                    channel_name: msg.get_channel_name().to_string()
+                });
+
+               
 
             }
 
