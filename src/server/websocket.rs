@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+
 use actix::{Actor, Addr, Context, Handler, Message, Recipient, ResponseFuture, WrapFuture};
 use crate::server::messages::{
     Connect, CountAll, Disconnect, Join, SendChannel, ServerMessage, TextMessageAll,
@@ -15,7 +16,6 @@ use super::server_response::{
 };
 
 
-
 use crate::utils;
 use super::messages;
 use super::model;
@@ -24,18 +24,40 @@ use super::model;
 use crate::app::websocket::{WebsocketService,WebsocketServiceTrait, ChannelData};
 
 
-// use actix::AsyncContext;
+use actix::AsyncContext;
 use actix::prelude::*;
 
+use super::websocket_provider_redis::WebsocketPersistence;
+use super::websocket_redis_adpter::{WebsocketAdapter, AdapterMessage };
 
+use log;
+
+use std::sync::Arc;
+
+
+
+pub struct WebsocketAdapterData {
+    arbiter: Arbiter,
+    subscribe_arbiter: Arbiter,
+    adapter: Arc<dyn WebsocketAdapter + Send + 'static + Sync>,
+    // reciever: std::sync::mpsc::Receiver<String>,
+    sender: std::sync::mpsc::Sender<AdapterMessage>
+}
 
 pub struct WebSocketServer {
     pub index: usize,
     pub sessions: HashMap<String, UserSession>,
     pub channels: HashMap<String, Channel>,
     pub ch_id: usize,
-    pub arbiter_subscriber: Arbiter,
+    // pub arbiter_subscriber: Arbiter,
     
+    // adapters: Vec<Arc<dyn WebsocketAdapter + Send + 'static + Sync>>,
+    // arbiters: Vec<Arbiter>
+
+    adapters_data: Vec<WebsocketAdapterData>,
+    receivers: Vec<std::sync::mpsc::Receiver<AdapterMessage>>
+
+
 }
 
 impl Actor for WebSocketServer {
@@ -43,10 +65,14 @@ impl Actor for WebSocketServer {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         println!("loading channels...");
-        Self::load_channels(self, ctx);
+        
+        self.subscribe_adapters("*");
+
+        self.listen_messages(ctx);
 
         println!("Channels loaded: {:?}", self.channels);
     }
+
 }
 
 impl WebSocketServer {
@@ -70,11 +96,12 @@ impl WebSocketServer {
             channels: channels,
             sessions: HashMap::new(),
             ch_id: 0,
-            arbiter_subscriber: Arbiter::new()
+            adapters_data: vec![],
+            receivers: vec![]
         }
     }
 
-    fn add_channel(&mut self, ch: Channel) -> Result<(), String>{
+    pub fn add_channel(&mut self, ch: Channel) -> Result<(), String>{
 
         if self.channels.contains_key(&ch.name) {
            return Err(format!("channel {} already exisits", ch.name));
@@ -100,7 +127,6 @@ impl WebSocketServer {
         user_session: &UserSession,
     ) 
     -> Result<(), model::WebsocketServerError>
-        // -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), model::WebsocketServerError>>>>
      {
         let ch = self.channels.get_mut(name);
 
@@ -254,138 +280,116 @@ impl WebSocketServer {
         return chs;
         
     }
-
-    pub fn store_channel(channel: Channel,_self: &Self,  ctx: &mut Context<Self>){
-
-        async {
-            let mut service = WebsocketService::new();
-            let data = ChannelData {
-                name: channel.name
-            };
-
     
-            service.store(data)
-                .await
-                .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))
+    pub fn add_adapter(&mut self, adapter: Arc<dyn WebsocketAdapter + Send + Sync + 'static> ){
 
-        }.into_actor(_self)
-        .then(|res, _self, _ctx| {
+        let (tx, rx): (std::sync::mpsc::Sender<AdapterMessage>, std::sync::mpsc::Receiver<AdapterMessage>) = std::sync::mpsc::channel();
+        let adapter_data = WebsocketAdapterData {
+            adapter: adapter,
+            arbiter: Arbiter::new(),
+            subscribe_arbiter: Arbiter::new(),
+            // reciever: rx,
+            sender: tx
             
-            if let Err(e) = res {
-                println!("Failed to store channel: {}", e.to_string());
-            }
-            actix::fut::ready(())
-        }).wait(ctx);
-
-        ()
-    }
-    
-    pub fn load_channels(_self: &Self,  ctx: &mut Context<Self>){
-
-        async {
-            let mut service = WebsocketService::new();
-    
-            service.load()
-                .await
-                .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))
-
-        }.into_actor(_self)
-        .then(|res, _self, _ctx| {
-         
-            
-            let channels = match res {
-                Err(e) =>{
-                    println!("Failed to store channel: {}", e.to_string());
-                    return  actix::fut::ready(())
-                },
-                Ok(v) => v
-            };
-            
-            let channels: Vec<Channel> = channels.iter()
-                .map(|e| Channel::new(&e.name))
-                .collect();
-
-            for ch in channels{
-                _self.add_channel(ch)
-                    .unwrap_or_else(|e| println!("Error adding channel: {}", e.to_string()));
-
-            }
-            Self::on_load_channels(_self, _ctx);
-            
-            actix::fut::ready(())
-        }).wait(ctx);
-
-        ()
-    }
-
-    fn on_load_channels(_self: &Self, ctx: &mut Context<Self>) -> (){
-        
-        let channels: Vec<ChannelData> = _self.channels
-            .iter()
-            .map(|(k , v)| ChannelData{
-                name: v.name.to_string()
-            })
-            .collect();
-        
-        let current_channels = _self.channels.clone();
-
-        let (tx, rx): (std::sync::mpsc::Sender<String>, std::sync::mpsc::Receiver<String>) = std::sync::mpsc::channel();
-
-        let tx1 = tx.clone();
-        let addr = ctx.address();
-
-        let execution =  async move {
-                let mut service = WebsocketService::new();
-
-
-                let res = service.subscribe_channels(channels, addr)
-                    .await
-                    .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()));
-
-                if let Err(e) = res {
-                    println!("Subscription error: {}", e.to_string());
-                }
-
-
         };
-    
-            _self.arbiter_subscriber.spawn(execution);
 
+        self.adapters_data.push(adapter_data);
+        self.receivers.push(rx);
 
-        ()
     }
 
-    pub fn publish_to_channels(_self: &Self,  ctx: &mut Context<Self>, channel: &str, message: &str){
 
-        let ch = channel.to_string();
-        let msg = message.to_string();
+    pub fn publish_adapters(&self, channel: &str, message: &str){
+        
+        for adpt in &self.adapters_data{
 
-        async {
-            let mut service = WebsocketService::new();
+            let adapter = adpt.adapter.clone();
+
+
+            let channel = channel.to_string();
+            let message = message.to_string();
+
+
+            println!("Publish to adapter: {}: {}", channel, message);
+
+
+            let exec = async move {
+
+                let res = adapter.publish_to_channel(&channel, &message).await;
+                
+                if let Err(e) = res{
+                    log::error!("Publish error: {}", e.to_string());
+                }
+            };
+
+
+            adpt.arbiter.spawn(exec);
+
+
+        }
+    }
     
-            service.publish_channel(ch, msg)
-                .await
-                .map_err(|e| model::WebsocketServerError::ChannelStoreError(e.to_string()))
+    pub fn subscribe_adapters(&self, pattern: &str){
+        
+        for adpt in &self.adapters_data{
 
-        }.into_actor(_self)
-        .then(|res, _self, _ctx| {
-         
-            
-            match res {
-                Err(e) =>{
-                    println!("Failed to publish to channel: {}", e.to_string());
-                    return  actix::fut::ready(())
-                },
-                Ok(v) => v
+            let adapter = adpt.adapter.clone();
+            let pattern = pattern.to_string();
+
+
+            let txx = adpt.sender.clone();
+
+            let exec = async move {
+
+                let res = adapter.subscribe(&pattern,  txx).await;
+                
+                if let Err(e) = res{
+                    log::error!("Subscribing error: {}", e.to_string());
+                }
+            };
+
+            adpt.subscribe_arbiter.spawn(exec);
+
+        }
+    }
+    
+    pub fn listen_messages(&mut self, context: & Context<Self>){
+
+        loop {
+            let resv = match self.receivers.pop(){
+                Some(v) => v,
+                None =>  break
             };
             
-        
-            actix::fut::ready(())
-        }).wait(ctx);
+            let address = context.address();
+            
 
-        ()
-    }
+            let exec  = async move {
+                loop {
+                    let data = match resv.recv(){
+                        Ok(v) => v,
+                        Err(e) => {
+                            log::error!("Receive error: {}", e.to_string());
+                            continue;
+                        }
+                    };
+                      
+                    address.do_send(SendChannel{
+                        channel_name: data.channel,
+                        msg: data.message
+                    })
+
+                }
+            };
+
+            let arbiter = Arbiter::new();
+            arbiter.spawn(exec);
+            
+        }
+
+    } 
 }
+
 
 impl Handler<ServerMessage<Connect>> for WebSocketServer {
     type Result = usize;
@@ -494,7 +498,7 @@ impl Handler<ServerMessage<Join>> for WebSocketServer {
             Some(v) => v.to_owned()
         };
 
-        Self::store_channel(channel, &self, _ctx);
+        // Self::store_channel(channel, &self, _ctx);
 
         
     }
@@ -524,7 +528,9 @@ impl Handler<ServerMessage<SendChannel>> for WebSocketServer {
         });
         self.send_to_channel(&msg.channel_name, &response_message, Some(data));
 
-        Self::publish_to_channels(self, _ctx, &msg.channel_name, &msg.msg);
+        // Self::publish_to_channels(self, _ctx, &msg.channel_name, &msg.msg);
+        println!("Sending to adapters...");
+        self.publish_adapters(&msg.channel_name, &msg.msg);
 
     }
 }

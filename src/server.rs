@@ -5,6 +5,7 @@ pub mod messages;
 pub mod server_response;
 pub mod model;
 pub mod websocket_provider_redis;
+pub mod websocket_redis_adpter;
 
 pub use websocket::WebSocketServer;
 pub use usersession::UserSession;

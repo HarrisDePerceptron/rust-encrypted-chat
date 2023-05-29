@@ -1,10 +1,11 @@
 use std::fmt::{Debug};
 use serde::{Serialize, Deserialize};
 
+use thiserror::Error;
+use anyhow::Result;
 
 
-
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Error)]
 pub enum WebsocketServiceError {
     SignupError(String),
     IncorrectDataStructure(String),
