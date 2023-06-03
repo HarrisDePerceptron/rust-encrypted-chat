@@ -19,6 +19,12 @@ pub struct DaoResponse<T>
 
 }
 
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResponseList<T>(pub Vec<DaoResponse<DaoRequest<T>>>);
+
+
+
 impl<T> DaoResponse<DaoRequest<T>> {
 
     pub fn new(data: DaoRequest<T>) -> Self {
@@ -45,6 +51,20 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = serde_json::to_string(self)
             .expect("Unable to serialze dao response ");
+
+        f.write_str(&s)
+    }
+}
+
+
+impl<T> Display for ResponseList<T>
+where
+    Self: Serialize,
+    T: Serialize
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = serde_json::to_string(&self.0)
+            .expect("Unable to serialze dao list response ");
 
         f.write_str(&s)
     }

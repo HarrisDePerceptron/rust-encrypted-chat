@@ -92,8 +92,8 @@ async fn main() -> std::io::Result<()> {
     let u = ch.create_user("harris").await.unwrap();
     println!("Created user: {}", u.to_string());
 
-    // let us = ch.list_users(2).await.unwrap();
-    // println!("Users: {:?}", us);
+    let us = ch.list_users(1).await.unwrap();
+    println!("Users: {}", us);
     
     let server = HttpServer::new(move || {
         let session_mw =

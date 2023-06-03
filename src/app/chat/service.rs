@@ -90,14 +90,14 @@ impl ChatService {
     } 
 
 
-    pub async fn list_users(&self, limit: i64) -> Result<Vec<dao::User>> {
+    pub async fn list_users(&self, limit: i64) -> Result<dao::ResponseList<dao::User>>  {
         let client = self.mongo_provider
             .connect()
             .await?;
         let db = client.database(&self.db);
         let collection = String::from("chat_user");
         
-        let col = db.collection::<dao::User>(&collection);
+        let col = db.collection::<dao::DaoResponse<dao::DaoRequest<dao::User>>>(&collection);
         
         let sort = mongodb::bson::Document::from(mongodb::bson::doc!{"created_at": 1});
 
@@ -110,14 +110,17 @@ impl ChatService {
         let mut cursor = col.find(None, find_options)
             .await?;
 
-        let mut users: Vec<dao::User> = vec![];
+        let mut users: Vec<dao::DaoResponse<dao::DaoRequest<dao::User>>> = vec![];
 
-        while let Some(u) = cursor.try_next().await? {
+        while let Some(mut u) = cursor.try_next().await? {
+            if let Some(id) = u._id {
+                u.data.id = Some(id.to_string());
+            }
+            
             users.push(u);
         }
 
-
-        Ok(users)
+        Ok(dao::ResponseList(users))
         
     } 
 
