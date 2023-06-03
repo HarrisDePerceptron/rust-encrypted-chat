@@ -34,14 +34,19 @@ use log;
 
 use std::sync::Arc;
 
+use tokio;
 
 
 pub struct WebsocketAdapterData {
     arbiter: Arbiter,
     subscribe_arbiter: Arbiter,
     adapter: Arc<dyn WebsocketAdapter + Send + 'static + Sync>,
-    // reciever: std::sync::mpsc::Receiver<String>,
     sender: std::sync::mpsc::Sender<AdapterMessage>
+}
+
+pub struct WebsocketReceiverData {
+    arbiter: Arbiter,
+    receiver: std::sync::mpsc::Receiver<AdapterMessage>
 }
 
 pub struct WebSocketServer {
@@ -49,13 +54,9 @@ pub struct WebSocketServer {
     pub sessions: HashMap<String, UserSession>,
     pub channels: HashMap<String, Channel>,
     pub ch_id: usize,
-    // pub arbiter_subscriber: Arbiter,
-    
-    // adapters: Vec<Arc<dyn WebsocketAdapter + Send + 'static + Sync>>,
-    // arbiters: Vec<Arbiter>
 
     adapters_data: Vec<WebsocketAdapterData>,
-    receivers: Vec<std::sync::mpsc::Receiver<AdapterMessage>>
+    receivers_data: Vec<WebsocketReceiverData>
 
 
 }
@@ -97,7 +98,8 @@ impl WebSocketServer {
             sessions: HashMap::new(),
             ch_id: 0,
             adapters_data: vec![],
-            receivers: vec![]
+            // receivers: vec![]
+            receivers_data: vec![]
         }
     }
 
@@ -288,13 +290,18 @@ impl WebSocketServer {
             adapter: adapter,
             arbiter: Arbiter::new(),
             subscribe_arbiter: Arbiter::new(),
-            // reciever: rx,
             sender: tx
             
         };
 
+        let receiver_data = WebsocketReceiverData {
+            arbiter:  Arbiter::new(),
+            receiver: rx
+        };
+
         self.adapters_data.push(adapter_data);
-        self.receivers.push(rx);
+        self.receivers_data.push(receiver_data);
+
 
     }
 
@@ -340,7 +347,6 @@ impl WebSocketServer {
             let txx = adpt.sender.clone();
 
             let exec = async move {
-
                 let res = adapter.subscribe(&pattern,  txx).await;
                 
                 if let Err(e) = res{
@@ -356,17 +362,20 @@ impl WebSocketServer {
     pub fn listen_messages(&mut self, context: & Context<Self>){
 
         loop {
-            let resv = match self.receivers.pop(){
+            let resv = match self.receivers_data.pop(){
                 Some(v) => v,
                 None =>  break
             };
             
             let address = context.address();
             
+            // let arbiter = resv.arbiter;
+            let rx = resv.receiver;
 
+    
             let exec  = async move {
                 loop {
-                    let data = match resv.recv(){
+                    let data = match rx.recv(){
                         Ok(v) => v,
                         Err(e) => {
                             log::error!("Receive error: {}", e.to_string());
@@ -382,9 +391,7 @@ impl WebSocketServer {
                 }
             };
 
-            let arbiter = Arbiter::new();
-            arbiter.spawn(exec);
-            
+            resv.arbiter.spawn(exec);
         }
 
     } 
@@ -528,7 +535,6 @@ impl Handler<ServerMessage<SendChannel>> for WebSocketServer {
         });
         self.send_to_channel(&msg.channel_name, &response_message, Some(data));
 
-        // Self::publish_to_channels(self, _ctx, &msg.channel_name, &msg.msg);
         println!("Sending to adapters...");
         self.publish_adapters(&msg.channel_name, &msg.msg);
 

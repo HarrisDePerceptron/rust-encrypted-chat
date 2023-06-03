@@ -4,7 +4,7 @@ pub mod application_service;
 pub mod application_factory;
 pub mod  application_utils;
 pub mod websocket;
-
+pub mod chat;
 pub mod redis;
 
 

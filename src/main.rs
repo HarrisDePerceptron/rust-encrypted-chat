@@ -33,7 +33,8 @@ use log::{info, warn};
 
 
 use encrypted_chat::server::websocket_redis_adpter::{RedisWebsocketAdapter, WebsocketAdapter};
-
+use encrypted_chat::application_factory;
+use encrypted_chat::app::chat::service::ChatService;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -60,6 +61,8 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok().expect(".dot env file unable to load");
     env_logger::init_from_env(Env::default().default_filter_or("info"));
 
+   
+
     let secret_key = Key::from(secrets::SESSION_KEY.as_bytes());
 
     let redis_provider_m = Mutex::new(persistence::redis::RedisProvider::new());
@@ -81,16 +84,17 @@ async fn main() -> std::io::Result<()> {
 
     };
 
-
     let factory_state = web::Data::new(sf);
 
+    let application_factory = application_factory::ApplicationFactory::new();
+    let ch = ChatService::new(application_factory.mongo_provider.clone());
+
+    let u = ch.create_user("harris").await.unwrap();
+    println!("Created user: {}", u.to_string());
+
+    // let us = ch.list_users(2).await.unwrap();
+    // println!("Users: {:?}", us);
     
-    let mut ws_service = WebsocketService::new();
-    let res  = ws_service.load()
-        .await.expect("Unable to load channels");
-
-    println!("Channel res: {:?}", res);
-
     let server = HttpServer::new(move || {
         let session_mw =
             SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
