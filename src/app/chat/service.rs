@@ -82,8 +82,7 @@ impl ChatService {
 
         let mut response = dao::DaoResponse::new(user);
         response._id =  Some(oid);
-        response.data.id = Some(id);
-        
+        response.id = Some(id);
 
         Ok(response)
         
@@ -114,7 +113,7 @@ impl ChatService {
 
         while let Some(mut u) = cursor.try_next().await? {
             if let Some(id) = u._id {
-                u.data.id = Some(id.to_string());
+                u.id = Some(id.to_string());
             }
             
             users.push(u);

@@ -14,6 +14,7 @@ use serde_json;
 pub struct DaoResponse<T> 
 {   
     pub _id: Option<ObjectId>,
+    pub id: Option<String>,
     #[serde(flatten)]
     pub data: T,
 
@@ -30,11 +31,14 @@ impl<T> DaoResponse<DaoRequest<T>> {
     pub fn new(data: DaoRequest<T>) -> Self {
         Self { 
             _id: None, 
+            id: None,
             data: data
         }
     }
 
 }
+
+
 impl<T> Deref for DaoResponse<T> {
     type Target = T;
 
@@ -74,7 +78,6 @@ where
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DaoRequest<T> 
 {   
-    pub id: Option<String>,
     #[serde(flatten)]
     pub data: T,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -85,7 +88,6 @@ pub struct DaoRequest<T>
 impl<T> DaoRequest<T> {
     pub fn new(data: T) -> Self {
         Self { 
-            id: None, 
             data: data, 
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
