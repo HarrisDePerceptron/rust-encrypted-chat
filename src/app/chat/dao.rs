@@ -81,7 +81,8 @@ pub struct DaoRequest<T>
     #[serde(flatten)]
     pub data: T,
     pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub delete: bool
 
 }
 
@@ -91,6 +92,7 @@ impl<T> DaoRequest<T> {
             data: data, 
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
+            delete: false
         }
     }
 }

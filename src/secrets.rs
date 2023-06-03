@@ -16,6 +16,7 @@ pub const TOKEN_EXPIRY_DAYS: Lazy<String> = Lazy::new(|| env::var("TOKEN_EXPIRY_
 
 pub const REDIS_URI: Lazy<String> = Lazy::new(|| env::var("REDIS_URI").expect("REDIS_URI not found"));
 pub const MONGO_URI: Lazy<String> = Lazy::new(|| env::var("MONGO_URI").expect("MONGO_URI not found"));
+pub const MONGO_DATABASE: Lazy<String> = Lazy::new(|| env::var("MONGO_DATABASE").expect("MONGO_DATABASE not found"));
 
 
 

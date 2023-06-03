@@ -86,14 +86,40 @@ async fn main() -> std::io::Result<()> {
 
     let factory_state = web::Data::new(sf);
 
-    let application_factory = application_factory::ApplicationFactory::new();
-    let ch = ChatService::new(application_factory.mongo_provider.clone());
+    let application_factory = application_factory::ApplicationFactory::new()
+        .await;
+    let ch = ChatService::new(application_factory.mongo_database.clone());
+
 
     let u = ch.create_user("harris").await.unwrap();
     println!("Created user: {}", u.to_string());
 
-    let us = ch.list_users(1).await.unwrap();
+    let user_id = u.id.unwrap();
+
+
+    let uf = ch.find_user_by_id(&user_id)
+        .await
+        .unwrap();
+    
+    println!("Found user: {}", uf);
+
+
+    let ou = ch.set_user_online(&user_id, true)
+        .await
+        .unwrap();
+
+
+    println!("Online user: {}", ou);
+
+    // let ud = ch.delete_user(&user_id)
+    //     .await
+    //     .unwrap();
+    
+    // println!("deleted user: {}", ud);
+
+    let us = ch.list_users(0,2).await.unwrap();
     println!("Users: {}", us);
+    
     
     let server = HttpServer::new(move || {
         let session_mw =
